@@ -97,9 +97,9 @@ pip. The script downloads `get-pip.py` from the official bootstrap URL
 and runs it against the newly patched interpreter, which installs pip
 into the runtime.
 
-**Step 4: install the six dependencies.** All six are pure Python wheels,
-meaning no compiler and no build tools are needed on the workshop
-laptop, and all six have been verified importable on 3.12.8:
+**Step 4: install the seven dependencies.** All seven are pure Python
+wheels, meaning no compiler and no build tools are needed on the workshop
+laptop, and all seven have been verified importable on 3.12.8:
 
 | Package | Purpose |
 | --- | --- |
@@ -107,22 +107,35 @@ laptop, and all six have been verified importable on 3.12.8:
 | pyserial | RS485 serial communication with the probe |
 | fastapi | the local web application that serves the interface |
 | uvicorn | the server that runs the FastAPI application |
+| websockets | the live feed from the server to the display, see below |
 | pyyaml | reads the rule, content and calibration files |
-| pytz | see below, do not skip this one |
+| pytz | see below, do not skip this one either |
 
-**pytz is required and easy to miss.** It is not something the
-application imports directly. duckdb needs it internally to read
-TIMESTAMPTZ columns back out of the database, but duckdb does not
-declare pytz as a dependency of its own, so a plain `pip install duckdb`
-will not pull it in for you. On a development machine this gap is
-invisible, because some other package usually drags pytz in as a side
-effect and it is already sitting there. Every workshop laptop starts
-clean, with nothing pre-installed, so it hits the gap every time. This
-was found by running the full test suite against the actual embeddable
-runtime rather than trusting the development machine: 11 tests failed
-with `Required module 'pytz' failed to import`. If anyone ever proposes
-trimming pytz from the dependency list because "nothing imports it",
-point them at this paragraph before they do.
+**Two of these are required but easy to miss, for the same reason.**
+Neither pytz nor websockets is imported by the application's own code, so
+a casual reading of the source would not reveal that they are needed, and
+neither is pulled in automatically by the package that actually needs it.
+On a development machine both are usually already present because some
+other software dragged them in, so the gap is invisible there. Every
+workshop laptop starts clean, so it hits the gap every time. Both were
+found the same way: by running against the actual embeddable runtime, not
+the development machine. If anyone ever proposes trimming either one
+because "nothing imports it", point them at this paragraph first.
+
+- **pytz.** duckdb needs it internally to read TIMESTAMPTZ columns back
+  out of the database, but does not declare it. Without it, 11 tests fail
+  with `Required module 'pytz' failed to import`, and the application
+  cannot read its own readings back.
+- **websockets.** uvicorn needs it to upgrade the live feed connection,
+  but ships no WebSocket implementation of its own. Without it, the
+  `/ws` connection returns 404, no live readings ever reach the display,
+  and the screen sits behind a permanent "reconnecting" banner showing
+  only its opening snapshot. The tell in the server window is the line
+  "No supported WebSocket library detected". The automated tests do not
+  catch this on their own, because the test client has its own WebSocket
+  support that the real server does not use, which is exactly why the
+  build must be tested by starting the real server, not only by running
+  the unit tests.
 
 **Step 5: copy the application.** The script copies the `app/` and
 `data/` folders (excluding the working database file, so a fresh one gets
@@ -195,10 +208,11 @@ Open Windows Device Manager and look under "Ports (COM & LPT)" while the
 dongle is plugged in. The dongle will appear as something like "USB-SERIAL
 CH340 (COM9)". The number after COM is the port you need.
 
-The operator console also lists available ports directly: open it with
-Ctrl+Alt+O from the farmer display, and the "Sensor dan port" panel shows
-a dropdown of every port Windows currently sees, so you rarely need
-Device Manager at all once the application is running.
+The operator console also lists available ports directly. Open it either
+by clicking the small gear icon in the bottom-left corner of the farmer
+display, or with the Ctrl+Alt+O keyboard shortcut. The "Sensor dan port"
+panel then shows a dropdown of every port Windows currently sees, so you
+rarely need Device Manager at all once the application is running.
 
 ### 3.4 What to do when the port is wrong
 
@@ -226,20 +240,35 @@ sessions unless the dongle moves to a different port.
 Double-click `Start Workshop.bat` inside the kit folder. This script:
 
 1. Confirms the bundled Python runtime is present.
-2. Locates Microsoft Edge, checking both
-   `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe` and
-   `C:\Program Files\Microsoft\Edge\Application\msedge.exe`, since the
-   install location varies between Windows builds. If neither is found,
-   the script stops and tells you so rather than failing silently.
+2. Locates Microsoft Edge the way Windows itself does, by reading the
+   registry entry Edge writes when it installs, which records its real
+   location whatever the drive or folder. If that is missing it falls back
+   to the standard folders, built from the Windows environment variables
+   so a laptop whose Windows is not on the C: drive still resolves. If no
+   Edge is found at all, it opens the app in the default browser instead of
+   failing, so the kit still works, just without the clean full-screen
+   window.
 3. Starts the application server in the background, listening on
-   `http://127.0.0.1:8420`.
-4. Waits three seconds for the server to come up, then opens Edge in
+   `http://127.0.0.1:8420`, in simulation mode.
+4. Waits for the server to actually be ready, then opens Edge in
    application mode (`--app=http://127.0.0.1:PORT`), which gives a clean
    window with no address bar, tabs or browser furniture. This is what
-   farmers see: it reads as a purpose-built device, not a web page.
+   farmers see: it reads as a purpose-built device, not a web page. The
+   first run takes longer, around half a minute, because it prepares the
+   demonstration history; the launcher waits for that rather than opening
+   the window onto a half-ready screen.
 
-If Edge opens to a blank or error page, the three-second wait was
-probably not enough on a slow laptop; simply reload the page.
+The launcher always starts in simulation mode. That is the safe default
+for the demonstration: the seeded history and the "SIMULASI" watermark
+are exactly what the walkthrough uses, and the facilitator switches a
+sensor to live during the session when a real probe is connected, as
+described in section 4.3. It also means a live binding left in the
+configuration from a previous session can never leave a kit stuck on a
+dead feed at startup.
+
+If the window opens to a blank or error page on a slow laptop, wait a few
+seconds and reload; the server may still have been finishing its first-run
+setup.
 
 ### 4.2 The farmer display
 
@@ -265,9 +294,11 @@ the kit offers.
 
 ### 4.3 The operator console
 
-Press Ctrl+Alt+O from the farmer display to open the operator console in
-a separate view. Farmers never see this screen; it is dense and capable,
-built for the facilitator. From here you can:
+Open the operator console from the farmer display in one of two ways: click
+the small gear icon in the bottom-left corner, or press Ctrl+Alt+O. The gear
+is deliberately faint so it stays out of the farmers' way, and brightens when
+you point at it. The console opens in a separate view that farmers never see;
+it is dense and capable, built for the facilitator. From here you can:
 
 - Bind a sensor to a port, profile and mode (live or simulate).
 - Use the register inspector to read arbitrary Modbus registers directly,
@@ -344,12 +375,14 @@ which is not part of the portable build and is not copied when a laptop
 is refreshed from the master folder. It does **not** persist
 independently of this export. When any PUTS result exists, the same
 button also writes `puts_observations_<timestamp>_<site>.parquet` and
-`.csv` alongside the readings files; this is the one dataset that cannot
-be reconstructed if it is lost, since it is the entire reason design spec
-section 10 exists. A short `README.txt` is written into `data/exports/`
-alongside every export, carrying the section 8.4 caveat on what the
-probe's nitrogen, phosphorus and potassium columns actually are, so the
-caveat travels with the data wherever it is copied.
+`.csv` alongside the readings files. This paired dataset, a validated PUTS
+result beside the probe's own reading of the same soil, is the one thing
+the kit produces that cannot be reconstructed if it is lost, and it is the
+data both universities most want out of the workshops. A short `README.txt`
+is written into `data/exports/` alongside every export, carrying the
+nutrient caveat from section 7 on what the probe's nitrogen, phosphorus and
+potassium columns actually are, so the caveat travels with the data
+wherever it is copied.
 
 Copy the exported files off the laptop before the next focus group runs
 "Atur ulang demo" (reset), since that action clears live readings.
@@ -415,7 +448,7 @@ mapping in the field.
 | Symptom | Likely cause | What to do |
 | --- | --- | --- |
 | `Start Workshop.bat` says it cannot find Python | The `python` folder is missing from the kit folder | Re-copy the assembled `SawahPintar` folder; do not copy only `app` and `data` |
-| The script says it cannot find Microsoft Edge | Edge is installed somewhere other than the two standard locations, or is not installed | Install Edge, or check whether a portable Edge build exists at either checked path |
+| The app opened in an ordinary browser with tabs, not a clean full-screen window | No Microsoft Edge was found, so the launcher fell back to the default browser | The kit still works this way; to get the clean window, install Microsoft Edge and run again |
 | Every dependency import fails on a freshly built kit | `python312._pth` still has `import site` commented out | Open that file inside `python/`, confirm it reads `import site` with no leading `#`, rebuild if not |
 | The suite passed on the build machine but the kit still fails imports at the workshop | The kit was certified against a developer machine's Python, not the actual embeddable runtime | Rebuild from scratch and re-run the suite against the real 3.12.8 runtime before shipping again |
 | Sensor shows no reading, or a reconnect banner appears | Wrong COM port, or the dongle driver is not installed | Check Device Manager or the operator console's port list; reinstall the CH340 or FTDI driver if the dongle is unrecognised |
@@ -424,7 +457,9 @@ mapping in the field.
 | Farmer display never updates from zero after the probe goes in | Probe not fully seated in moist soil, or in simulate mode with no scenario triggered | Reseat the probe; if running a rehearsal, use the operator console's "Masukkan probe" scenario button |
 | A new focus group sees the previous group's readings | Demo was not reset between groups | Press "Atur ulang demo" in the operator console before the next group starts, after exporting the previous group's data |
 | Exported files are missing after a session | Export was not run before "Atur ulang demo" was pressed | Always export before resetting; reset clears live readings and cannot be undone |
-| Application seems to work but a permanent "SIMULASI" watermark is showing | The sensor is bound in simulate mode rather than live | Rebind the sensor to live mode in the operator console's port panel |
+| A "SIMULASI" watermark is showing | The kit is in simulation mode | This is normal and expected: the kit always starts in simulation. To use a real probe, switch the sensor to live in the operator console's "Sensor dan port" panel, set the correct port and press "Terapkan" |
+| The display shows "Sensor tidak merespons" (sensor not responding) after switching to live | Live mode was selected but the probe cannot be read: not connected, wrong port, or the port is held by another program | Check the probe is plugged in and the port is right, then re-apply; or switch back to simulation in the operator console, which recovers immediately. The feed stays alive throughout, so no restart is needed |
+| The display is stuck on "Sambungan terputus" (reconnecting) and never shows live data, even in simulation | The bundled runtime is missing its WebSocket library, so the live feed cannot connect | Rebuild the kit; the build script installs websockets. The server window will also show "No supported WebSocket library detected". See section 2.3, step 4 |
 
 ## 7. The honesty position
 

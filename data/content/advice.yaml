@@ -1,9 +1,10 @@
 # Bilingual advice content pack. Every entry below is a draft awaiting
-# review by Universitas Hasanuddin faculty: see design spec section 8.3.
-# Wording, icon keys and colour semantics are all unreviewed placeholders,
-# not final farmer-facing text. The pooled 64.5 per cent salinity yield
-# loss figure from the meta-analysis (design spec section 4.1) must never
-# appear here: it is a pooled experimental mean, not a typical field loss.
+# review by Universitas Hasanuddin faculty: see docs/reviewing-the-copy.md
+# for how to check and correct this wording. Wording, icon keys and colour
+# semantics are all unreviewed placeholders, not final farmer-facing text.
+# The pooled 64.5 per cent salinity yield-loss figure from the meta-analysis
+# (docs/references.md, source 1) must never appear here: it is a pooled
+# experimental mean, not a typical field loss.
 
 salinity_none:
   icon: salinity

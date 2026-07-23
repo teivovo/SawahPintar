@@ -1,9 +1,9 @@
-# The four real rule groups, design spec section 8.1. Every threshold here
-# is transcribed from the design spec's evidence base, not invented: see
-# the comment above each group for its source.
+# The four real rule groups. Every threshold here is transcribed from the
+# published evidence base, not invented: see docs/references.md for the
+# sources, and the comment above each group for which one it uses.
 
 rules:
-  # Salinity, design spec section 4.1 and 8.1. A meta-analysis of 58
+  # Salinity, docs/references.md source 1. A meta-analysis of 58
   # studies found the reproductive stage, panicle initiation through
   # flowering, more sensitive to salt than the seedling stage, so the
   # same salinity class is escalated one severity level during those two
@@ -48,7 +48,7 @@ rules:
     content_key: salinity_severe
     condition: {source: derived, name: salinity_class, op: eq, value: severely_saline}
 
-  # Water, IRRI Safe Alternate Wetting and Drying, design spec section 4.1
+  # Water, IRRI Safe Alternate Wetting and Drying, docs/references.md source 3
   # and 8.1. Re-flood at a water table 15 cm below the surface, top up to
   # about 5 cm. The flowering suspension is absolute: selecting panicle
   # initiation or flowering suppresses every other water rule outright,
@@ -73,7 +73,7 @@ rules:
     content_key: water_within_range
     condition: {source: derived, name: water_table_depth_cm, op: lt, value: 15}
 
-  # Acidity, design spec section 4.1 and 8.1, from 528 on-farm lowland
+  # Acidity, docs/references.md source 2, from 528 on-farm lowland
   # rice trials in Indonesia. Below pH 5.5 the yield response to added
   # phosphorus and potassium rises, so lime or dolomite and P and K
   # supplementation are worthwhile.
@@ -89,14 +89,14 @@ rules:
     content_key: acidity_ok
     condition: {source: metric, name: ph, op: ge, value: 5.5}
 
-  # Nutrients, design spec section 8.4. The probe's nitrogen, phosphorus
+  # Nutrients, docs/references.md source 8 and manual section 7. The probe's nitrogen, phosphorus
   # and potassium registers are three functions of one conductivity
   # measurement and must never be shown separately or used to derive a
   # dose. This group reports exactly one derived indicator, soil solution
   # strength, banded from the same salinity classification used above,
   # and it is always severity good because it is comparative information,
-  # not an instruction: a dose comes only from the Permentan table in
-  # Task 6, driven by an operator-entered PUTS result, never from here.
+  # not an instruction: a dose comes only from the Permentan table,
+  # driven by an operator-entered PUTS result, never from here.
   - id: nutrients_weak
     group: nutrients
     severity: good

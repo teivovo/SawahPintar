@@ -1,9 +1,9 @@
-# Provisional calibration. See app/insights/calibration.py and design spec
-# sections 8.1, 8.4 and 13.
+# Provisional calibration. See app/insights/calibration.py, and the
+# deployment manual section 7.3 for why these are provisional.
 #
 # provisional: true means neither mapping below has been checked against
 # local South Sulawesi paddy soils. Replace these numbers once the field
-# water tube described in design spec section 10 has produced paired
+# water tube described in the deployment manual section 7.3 has produced paired
 # readings, and once local bulk conductivity samples have been compared
 # against saturated paste extract measurements.
 provisional: true
