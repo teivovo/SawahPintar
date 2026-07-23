@@ -1,5 +1,5 @@
-# Permentan No. 13 of 2022 status classes and official phosphorus dose,
-# design spec section 4.1. These are verified published figures, not
+# Permentan No. 13 of 2022 status classes and official phosphorus dose.
+# See docs/references.md source 6. These are verified published figures, not
 # provisional calibration, transcribed here as data so a faculty member
 # can correct a transcription error without touching code.
 phosphorus:
@@ -19,7 +19,7 @@ phosphorus:
       sp36_kg_per_ha: 50
 potassium:
   # rendah: below 10 mg K2O per 100 g. sedang: 10 to 20 inclusive.
-  # tinggi: above 20. The design spec gives no official K2O dose figures,
+  # tinggi: above 20. Permentan 13 of 2022 gives no official K2O dose figures,
   # only the status class boundaries, so no potassium dose is recorded
   # here.
   low_max_exclusive: 10
