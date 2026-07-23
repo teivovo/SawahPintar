@@ -1,0 +1,97 @@
+# Bilingual advice content pack. Every entry below is a draft awaiting
+# review by Universitas Hasanuddin faculty: see design spec section 8.3.
+# Wording, icon keys and colour semantics are all unreviewed placeholders,
+# not final farmer-facing text. The pooled 64.5 per cent salinity yield
+# loss figure from the meta-analysis (design spec section 4.1) must never
+# appear here: it is a pooled experimental mean, not a typical field loss.
+
+salinity_none:
+  icon: salinity
+  headline_id: "Salinitas tanah rendah"
+  body_id: "Kondisi salinitas belum menjadi risiko saat ini."
+  subtitle_en: "Salinity is low, not currently a risk"
+  draft: true
+
+salinity_mild:
+  icon: salinity
+  headline_id: "Salinitas mulai meningkat"
+  body_id: "Pantau kondisi tanah dan kurangi sumber air asin bila memungkinkan."
+  subtitle_en: "Salinity is mild, monitor and reduce saline water sources where possible"
+  draft: true
+
+salinity_moderate:
+  icon: salinity
+  headline_id: "Salinitas tanah sedang"
+  body_id: "Pertimbangkan pencucian lahan dengan air tawar sebelum fase generatif."
+  subtitle_en: "Salinity is moderate, consider flushing the field with fresh water before the reproductive stage"
+  draft: true
+
+salinity_reproductive:
+  icon: salinity
+  headline_id: "Salinitas berisiko tinggi pada fase ini"
+  body_id: "Padi lebih peka terhadap garam pada fase inisiasi malai dan pembungaan. Segera kurangi salinitas air."
+  subtitle_en: "Salinity risk is elevated: rice is more sensitive to salt from panicle initiation through flowering than at earlier stages"
+  draft: true
+
+salinity_severe:
+  icon: salinity
+  headline_id: "Salinitas tanah tinggi"
+  body_id: "Segera kurangi salinitas air dan pertimbangkan pencucian lahan."
+  subtitle_en: "Salinity is high, reduce saline water and consider flushing the field promptly"
+  draft: true
+
+water_flowering_suspended:
+  icon: water
+  headline_id: "Jaga sawah tetap tergenang"
+  body_id: "Pada fase inisiasi malai dan pembungaan, tunda pengeringan berkala dan pertahankan genangan."
+  subtitle_en: "Keep the field flooded through panicle initiation and flowering, safe alternate wetting and drying is suspended during this window"
+  draft: true
+
+water_reflood_now:
+  icon: water
+  headline_id: "Saatnya mengairi kembali"
+  body_id: "Muka air di bawah permukaan sudah turun sekitar 15 cm, alirkan air hingga sekitar 5 cm di atas permukaan."
+  subtitle_en: "The perched water table has dropped to about 15 cm below the surface, re-flood to about 5 cm"
+  draft: true
+
+water_within_range:
+  icon: water
+  headline_id: "Pengeringan berkala berjalan aman"
+  body_id: "Muka air masih dalam rentang aman, belum perlu mengairi kembali."
+  subtitle_en: "The water table is still within the safe alternate wetting and drying range, no need to re-flood yet"
+  draft: true
+
+acidity_low_ph:
+  icon: acidity
+  headline_id: "Tanah bersifat asam"
+  body_id: "Tambahkan kapur atau dolomit. Pupuk fosfor dan kalium akan lebih efektif pada tanah ini."
+  subtitle_en: "Soil pH is below 5.5, apply lime or dolomite; phosphorus and potassium will repay application more strongly on this soil"
+  draft: true
+
+acidity_ok:
+  icon: acidity
+  headline_id: "pH tanah dalam rentang baik"
+  body_id: "Tidak ada tindakan perbaikan keasaman yang diperlukan saat ini."
+  subtitle_en: "Soil pH is adequate, no lime or dolomite action needed at this reading"
+  draft: true
+
+nutrients_weak:
+  icon: nutrient
+  headline_id: "Kekuatan larutan tanah lemah"
+  body_id: "Nilai ini dihitung dari konduktivitas tanah, bukan dosis pupuk. Gunakan hasil uji PUTS untuk rekomendasi pupuk."
+  subtitle_en: "Soil solution strength is weak, derived from conductivity alone; use a PUTS test for a fertiliser recommendation"
+  draft: true
+
+nutrients_moderate:
+  icon: nutrient
+  headline_id: "Kekuatan larutan tanah sedang"
+  body_id: "Nilai ini dihitung dari konduktivitas tanah, bukan dosis pupuk. Gunakan hasil uji PUTS untuk rekomendasi pupuk."
+  subtitle_en: "Soil solution strength is moderate, derived from conductivity alone; use a PUTS test for a fertiliser recommendation"
+  draft: true
+
+nutrients_strong:
+  icon: nutrient
+  headline_id: "Kekuatan larutan tanah kuat"
+  body_id: "Nilai ini dihitung dari konduktivitas tanah, bukan dosis pupuk. Gunakan hasil uji PUTS untuk rekomendasi pupuk."
+  subtitle_en: "Soil solution strength is strong, derived from conductivity alone; use a PUTS test for a fertiliser recommendation"
+  draft: true

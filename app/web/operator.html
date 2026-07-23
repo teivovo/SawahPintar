@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SawahPintar - Konsol Operator</title>
+<link rel="stylesheet" href="/operator.css">
+</head>
+<body>
+  <header class="operator-header">
+    <h1>Konsol Operator</h1>
+    <a class="back-link" href="/">Kembali ke tampilan petani</a>
+  </header>
+
+  <main class="operator-grid">
+    <section class="operator-panel">
+      <h2>Sensor dan port</h2>
+      <label>Sensor
+        <select id="bind-sensor-id">
+          <option value="probe-a">probe-a</option>
+          <option value="probe-b">probe-b</option>
+        </select>
+      </label>
+      <label>Port
+        <select id="bind-port"></select>
+      </label>
+      <label>Profil
+        <select id="bind-profile"></select>
+      </label>
+      <label>Mode
+        <select id="bind-mode">
+          <option value="simulate">Simulasi</option>
+          <option value="live">Langsung</option>
+        </select>
+      </label>
+      <button type="button" id="bind-button">Terapkan</button>
+      <p id="bind-status" class="operator-status"></p>
+    </section>
+
+    <section class="operator-panel">
+      <h2>Pemeriksa register (OpenModScan)</h2>
+      <label>Port <input type="text" id="inspect-port" value="COM9"></label>
+      <label>Baud <input type="number" id="inspect-baud" value="4800"></label>
+      <label>Alamat <input type="number" id="inspect-address" value="1"></label>
+      <label>Fungsi <input type="number" id="inspect-function" value="3"></label>
+      <label>Mulai <input type="number" id="inspect-start" value="0"></label>
+      <label>Jumlah <input type="number" id="inspect-count" value="9"></label>
+      <button type="button" id="inspect-button">Baca register</button>
+      <pre id="inspect-result" class="operator-result"></pre>
+    </section>
+
+    <section class="operator-panel">
+      <h2>Tahap pertumbuhan dan bahasa</h2>
+      <label>Tahap
+        <select id="growth-stage">
+          <option value="land_preparation">Persiapan lahan</option>
+          <option value="transplanting">Tanam pindah</option>
+          <option value="tillering">Pembentukan anakan</option>
+          <option value="panicle_initiation">Inisiasi malai</option>
+          <option value="flowering">Berbunga</option>
+          <option value="ripening">Pematangan</option>
+        </select>
+      </label>
+      <button type="button" id="growth-stage-button">Simpan tahap</button>
+      <label>Nama lokasi <input type="text" id="site-name"></label>
+      <button type="button" id="site-name-button">Simpan lokasi</button>
+      <button type="button" id="language-toggle-button">Ganti bahasa (ID/EN)</button>
+      <p id="config-status" class="operator-status"></p>
+    </section>
+
+    <section class="operator-panel">
+      <h2>Kartu lahan</h2>
+      <label>Luas lahan (ha) <input type="number" step="0.01" id="field-size"></label>
+      <label>Varietas <input type="text" id="field-variety"></label>
+      <label>Umur bibit (hari) <input type="number" id="field-seedling-age"></label>
+      <label>Sumber air <input type="text" id="field-water-source"></label>
+      <label>Hasil panen sebelumnya (t/ha) <input type="number" step="0.01" id="field-previous-yield"></label>
+      <label>Pupuk yang tersedia <input type="text" id="field-fertiliser"></label>
+      <button type="button" id="field-card-button">Simpan kartu lahan</button>
+      <p id="field-card-status" class="operator-status"></p>
+    </section>
+
+    <section class="operator-panel">
+      <h2>Hasil PUTS</h2>
+      <label>Nitrogen
+        <select id="puts-nitrogen"><option value="rendah">Rendah</option><option value="sedang">Sedang</option><option value="tinggi">Tinggi</option></select>
+      </label>
+      <label>Fosfor
+        <select id="puts-phosphorus"><option value="rendah">Rendah</option><option value="sedang">Sedang</option><option value="tinggi">Tinggi</option></select>
+      </label>
+      <label>Kalium
+        <select id="puts-potassium"><option value="rendah">Rendah</option><option value="sedang">Sedang</option><option value="tinggi">Tinggi</option></select>
+      </label>
+      <label>pH PUTS <input type="number" step="0.1" id="puts-ph"></label>
+      <button type="button" id="puts-button">Catat hasil PUTS</button>
+      <p id="puts-status" class="operator-status"></p>
+    </section>
+
+    <section class="operator-panel">
+      <h2>Skenario benih (simulasi)</h2>
+      <label>Sensor
+        <select id="scenario-sensor-id">
+          <option value="probe-a">probe-a</option>
+          <option value="probe-b">probe-b</option>
+        </select>
+      </label>
+      <button type="button" id="scenario-insert-button">Masukkan probe</button>
+      <button type="button" id="scenario-withdraw-button">Cabut probe</button>
+      <p id="scenario-status" class="operator-status"></p>
+    </section>
+
+    <section class="operator-panel">
+      <h2>Sesi</h2>
+      <button type="button" id="reset-button" class="danger">Atur ulang demo</button>
+      <button type="button" id="export-button">Ekspor data (Parquet dan CSV)</button>
+      <p id="session-status" class="operator-status"></p>
+    </section>
+  </main>
+
+  <script src="/operator.js"></script>
+</body>
+</html>

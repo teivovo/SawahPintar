@@ -1,0 +1,39 @@
+# Provisional calibration. See app/insights/calibration.py and design spec
+# sections 8.1, 8.4 and 13.
+#
+# provisional: true means neither mapping below has been checked against
+# local South Sulawesi paddy soils. Replace these numbers once the field
+# water tube described in design spec section 10 has produced paired
+# readings, and once local bulk conductivity samples have been compared
+# against saturated paste extract measurements.
+provisional: true
+
+# Bulk conductivity in microsiemens per centimetre, as the probe reports it,
+# mapped to a salinity class. A reading at or below max_conductivity_us_cm
+# belongs to that row's class. These breakpoints are illustrative only and
+# are not taken from the salinity meta-analysis, which used saturated paste
+# extract conductivity, a different physical quantity from bulk conductivity.
+salinity_breakpoints:
+  - max_conductivity_us_cm: 1000
+    salinity_class: non_saline
+  - max_conductivity_us_cm: 2000
+    salinity_class: slightly_saline
+  - max_conductivity_us_cm: 4000
+    salinity_class: moderately_saline
+  - max_conductivity_us_cm: 999999
+    salinity_class: severely_saline
+
+# Volumetric moisture per cent mapped to an estimated perched water-table
+# depth in centimetres below the surface, by linear interpolation between
+# the points below. 45 per cent stands in for a freshly flooded paddy at
+# the surface; 15 per cent stands in for a dry field with a deep table.
+# These four points are placeholders, not measurements.
+water_table_curve:
+  - moisture_percent: 15
+    water_table_depth_cm: 30
+  - moisture_percent: 25
+    water_table_depth_cm: 15
+  - moisture_percent: 35
+    water_table_depth_cm: 5
+  - moisture_percent: 45
+    water_table_depth_cm: 0

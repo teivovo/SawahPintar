@@ -1,0 +1,30 @@
+[project]
+name = "sawahpintar"
+version = "0.1.0"
+description = "Soil sensor workshop application for the Rural AI project"
+requires-python = ">=3.12"
+dependencies = [
+    "pyserial>=3.5",
+    "duckdb>=1.1.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    # uvicorn ships no WebSocket implementation of its own. Without one, the
+    # /ws endpoint cannot upgrade and returns 404, so the live feed never
+    # connects and the display is stuck on its first snapshot behind a
+    # permanent reconnect banner. This is the dependency that provides it.
+    # Like pytz, it is missing only on a clean runtime, never on a developer
+    # machine that already has it, so it must be declared explicitly.
+    "websockets>=13.0",
+    "pyyaml>=6.0",
+    # Required by duckdb to read back TIMESTAMPTZ columns. It is not pulled in
+    # automatically, and omitting it fails only on a clean runtime, which is
+    # every workshop laptop. See docs for the deployment check.
+    "pytz>=2024.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

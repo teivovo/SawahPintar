@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Packaged runtime (vendored at build time, not tracked)
+python/
+dist/
+build/
+
+# Workshop data and exports
+data/*.duckdb
+data/*.duckdb.wal
+exports/
+
+# Windows
+desktop.ini
+Thumbs.db
+**/desktop.ini
+
+# Assistant tooling and development scaffolding (not team artifacts)
+.claude/
+.superpowers/
+docs/superpowers/
+
+# Written at runtime when the application cannot start
+startup-error.txt

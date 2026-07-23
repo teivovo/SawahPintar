@@ -1,0 +1,13 @@
+{
+  "language": "en",
+  "site_name": "",
+  "growth_stage": "transplanting",
+  "transplanting_date": null,
+  "sensors": {
+    "probe-a": {
+      "port": "COM9",
+      "profile": "data\\profiles\\sn3002.json",
+      "mode": "live"
+    }
+  }
+}

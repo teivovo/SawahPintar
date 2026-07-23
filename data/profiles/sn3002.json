@@ -1,0 +1,29 @@
+{
+  "key": "sn3002",
+  "label": "SN-3002-TR five-pin soil probe (RS485)",
+  "notes": "The nitrogen_raw, phosphorus_raw and potassium_raw registers (0x0004 to 0x0006) are three functions of one underlying conductivity measurement, not three independent nutrient readings; the writable calibration registers only apply a scale and an offset to that single input, so the three outputs can never be separated. See design spec section 8.4 for the full evidence, including the probe reading nitrogen, phosphorus and potassium as zero together in air.",
+  "address": 1,
+  "baud": 4800,
+  "bytesize": 8,
+  "parity": "N",
+  "stopbits": 1,
+  "timeout": 1.0,
+  "read_plans": [
+    { "function": 3, "start": 0, "count": 9 }
+  ],
+  "registers": [
+    { "name": "moisture", "offset": 0, "scale": 10, "unit": "percent",
+      "minimum": 0, "maximum": 100 },
+    { "name": "temperature", "offset": 1, "scale": 10, "signed": true,
+      "unit": "celsius", "minimum": -40, "maximum": 80 },
+    { "name": "conductivity", "offset": 2, "scale": 1, "unit": "uS/cm",
+      "minimum": 0, "maximum": 20000 },
+    { "name": "ph", "offset": 3, "scale": 10, "unit": "pH",
+      "minimum": 3, "maximum": 9 },
+    { "name": "nitrogen_raw", "offset": 4, "scale": 1, "unit": "mg/kg" },
+    { "name": "phosphorus_raw", "offset": 5, "scale": 1, "unit": "mg/kg" },
+    { "name": "potassium_raw", "offset": 6, "scale": 1, "unit": "mg/kg" },
+    { "name": "salinity_raw", "offset": 7, "scale": 1, "unit": "mg/L" },
+    { "name": "tds_raw", "offset": 8, "scale": 1, "unit": "mg/L" }
+  ]
+}
