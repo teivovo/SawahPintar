@@ -274,23 +274,43 @@ setup.
 
 This is the window that opens automatically and is the only thing
 farmers should see. It is designed to be read by a standing group in
-daylight: large type, high contrast, and the two most important zones
-visible without scrolling.
+daylight: large type, high contrast, a light palette. It takes one of two
+forms, chosen automatically by whether the field has been laid out as
+plots (section 4.2a).
 
-- An overall soil status indicator at the top, in one of three colours:
-  green for satisfactory, amber for attention needed, and red for act
-  now. Below it, up to four advice cards, each led by an icon and the
-  same colour scale, ranked by severity first and then by topic priority
-  (salinity above water, water above acidity, acidity above nutrients).
-- Friendly dials showing moisture, pH, conductivity and temperature in
-  large rounded numbers.
-- A trends panel, collapsed by default, that the facilitator opens when
-  the discussion calls for it.
+**Field map (when plots are configured).** The field is drawn as a map: an
+aerial photo of the plot with each sensor's area outlined and tinted by its
+alert colour - green for satisfactory, amber for attention, red for act now,
+and a dashed grey for a plot that has no sensor. It fits one screen with no
+scrolling: the map on the left, and on the right the detail for whichever
+plot you tap. That detail shows the plot's overall status, a data-source
+switch (Simulasi / Langsung / Lepas), the four soil readings, the Perkiraan
+NPK estimate (section 7.2), and up to four advice cards ranked by severity
+then topic. Plots recolour live as their readings change.
 
-With two probes connected, the display splits into a side-by-side
-comparison: a flooded paddy beside a dry bund, or a fertilised plot
-beside an untreated one, which is the strongest single teaching device
-the kit offers.
+**Single or split panel (no plots configured).** With a single bare probe and
+no plots drawn, the display is the original panel: an overall status
+indicator, up to four advice cards, dials for moisture, pH, conductivity and
+temperature, and a trends panel collapsed by default. With exactly two probes
+it splits into a side-by-side comparison, a flooded paddy beside a dry bund
+or a fertilised plot beside an untreated one, which is the strongest single
+teaching device the kit offers.
+
+The SIMULASI watermark appears whenever any active reading is simulated, and
+no farmer-facing control can hide it.
+
+### 4.2a Laying out the field (the zone editor)
+
+To use the field map, draw one plot per sensor once for the site. Open the
+operator console (section 4.3), click **Editor petak sawah**, and you get the
+field photo with a draggable outline for each sensor. Drag a corner handle to
+fit a plot to a field, drag a midpoint dot to add a corner, double-click a
+corner to remove it, and drag a plot's interior to move it whole. Set each
+plot's name, source (simulation, live probe, or detached) and port; add or
+remove plots; then Save. The layout is stored in `config.json`, and the
+farmer map shows it immediately. The bundled photo is a stand-in: a real site
+can replace `app/web/assets/field-default.jpg` with a drone or satellite image
+of the actual field and re-trace the plots against it.
 
 ### 4.3 The operator console
 
@@ -300,7 +320,9 @@ is deliberately faint so it stays out of the farmers' way, and brightens when
 you point at it. The console opens in a separate view that farmers never see;
 it is dense and capable, built for the facilitator. From here you can:
 
-- Bind a sensor to a port, profile and mode (live or simulate).
+- Bind a sensor to a port, profile and mode (live, simulate or detached).
+- Open the field zone editor to lay out plots on the field photo (section
+  4.2a).
 - Use the register inspector to read arbitrary Modbus registers directly,
   useful for confirming a new sensor's layout in the field (see section
   5.3).
@@ -491,11 +513,21 @@ independent lines of evidence agree:
 
 ### 7.2 What the application therefore does
 
-Because of the above, the application never presents a probe-derived
-nitrogen, phosphorus or potassium figure, and never calculates a
-fertiliser dose from the probe. Instead it shows one derived indicator,
-called soil solution strength, computed from conductivity and clearly
-labelled as such, both in the interface and in the rule engine comments.
+Because of the above, the application treats the probe's nitrogen,
+phosphorus and potassium as an **estimate, never a measurement**, and never
+calculates a fertiliser dose from them. On the field map, each plot's detail
+shows a "Perkiraan NPK" (NPK estimate) block: the three values in mg/kg, a
+coarse band (rendah / sedang / cukup) and a light suggested action such as
+"pertimbangkan urea", always under the label **"estimasi sensor"** so nobody
+mistakes it for a laboratory figure. Alongside it the interface still shows
+the conductivity-derived soil solution strength indicator and its advice card.
+
+Showing the three estimates at all was a deliberate choice for the workshop
+demo (made 2026-07-29): it turns the probe's nutrient registers into a
+talking point about what the instrument can and cannot do, rather than hiding
+them. Earlier the app showed only the single soil-solution-strength indicator.
+Either way, the estimate is never a dose, and the caveat above is the honest
+answer to give when a farmer asks how accurate it is.
 
 The only path to a numeric fertiliser dose is through an operator-entered
 PUTS result. PUTS classifies nitrogen, phosphorus and potassium into

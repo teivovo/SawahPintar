@@ -60,13 +60,15 @@ useful contribution Hasanuddin can make to the kit before a workshop.
 
 The probe reports nitrogen, phosphorus and potassium values, but these are not
 three measurements. They are three functions of one conductivity reading, which
-means they cannot be separated from each other. The application therefore never
-shows them as independent nutrient figures and never derives a fertiliser dose
-from the probe. A dose comes only from an operator-entered PUTS soil-test result
-via the official Permentan 13 of 2022 table. Section 7 of the deployment manual
-explains this in full, with the three lines of evidence, so a facilitator can
-answer a farmer or a reviewer who asks. The academic backing is source 8 in the
-references.
+means they cannot be separated from each other. The application therefore treats
+them as an **estimate, never a measurement**, and never derives a fertiliser
+dose from the probe. Each plot's detail does show a "Perkiraan NPK" estimate,
+banded and labelled "estimasi sensor", as a talking point about what the
+instrument can and cannot do; a fertiliser dose still comes only from an
+operator-entered PUTS soil-test result via the official Permentan 13 of 2022
+table. Section 7 of the deployment manual explains this in full, with the three
+lines of evidence, so a facilitator can answer a farmer or a reviewer who asks.
+The academic backing is source 8 in the references.
 
 ## How it works
 
