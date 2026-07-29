@@ -46,6 +46,14 @@ Only three lines are wording:
   tells you what the message is meant to say, so you can judge whether the
   Bahasa matches the intent.
 
+The `when` line states the condition that makes this message appear, for
+example "Conductivity 2001 to 4000 uS/cm (moderately saline)". It is there so
+an agronomist can check that the advice actually fits the condition, not only
+that the language reads well. The application does not use the `when` line; it
+is documentation. A language reviewer can ignore it, and an agronomy reviewer
+should read it and flag any message whose advice does not match its condition.
+The `icon` and `draft` lines are handled elsewhere and explained below.
+
 ## What to do
 
 For each of the 13 messages:
