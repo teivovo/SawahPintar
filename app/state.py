@@ -29,14 +29,37 @@ def build_reader(port: str, profile_path: str, sensor_id: str, mode: str) -> Any
     """Construct a reader for one sensor slot.
 
     mode 'simulate' returns a SimulatedReader; mode 'live' returns a
-    SensorReader over a real serial port. Kept local to this plan rather
-    than depending on app.acquire, which was not part of the interface
-    contract this plan was given to build on.
+    SensorReader over a real serial port; mode 'off' returns None, meaning
+    the plot is drawn on the map but has no sensor and never opens a feed.
+    Kept local to this plan rather than depending on app.acquire, which was
+    not part of the interface contract this plan was given to build on.
     """
+    if mode == "off":
+        return None
     if mode == "simulate":
         return SimulatedReader(sensor_id)
     profile = SensorProfile.load(profile_path)
     return SensorReader(sensor_id, profile, SerialTransport(port, profile))
+
+
+# The three farmer-facing plot states, keyed off the worst advice severity
+# on the plot. The advice card severity strings are the colour names the
+# insight engine emits (app.insights.models.Severity values): green, amber,
+# red. A plot with no reading yet, or with no sensor (mode 'off'), is idle.
+_SEVERITY_TO_STATUS = {"green": ("good", 1), "amber": ("attention", 2), "red": ("critical", 3)}
+
+
+def zone_status(reading: Reading | None, advice: list, mode: str) -> str:
+    """Overall plot state for the field map: good, attention, critical or idle."""
+    if mode == "off" or reading is None:
+        return "idle"
+    worst_rank = 0
+    label = "good"
+    for card in advice:
+        status_label, rank = _SEVERITY_TO_STATUS.get(card.severity, ("good", 1))
+        if rank > worst_rank:
+            worst_rank, label = rank, status_label
+    return label
 
 
 def default_evaluate(
@@ -158,12 +181,21 @@ def build_state_payload(state: WorkshopState) -> dict:
     simulated = False
     readings: dict[str, Reading] = {}
 
-    for sensor_id in state.config.sensors:
+    for sensor_id, binding in state.config.sensors.items():
         reading = db.latest(state.con, sensor_id)
         advice = state.latest_advice(sensor_id, reading) if reading is not None else []
         sensors[sensor_id] = {
             "reading": serialise_reading(reading),
             "advice": serialise_advice(advice),
+            # Field-map metadata: the plot label, its outline, how the plot
+            # is currently sourced, and its overall state. A plot with no
+            # zone drawn yet is simply not shown on the map.
+            "name": binding.name or sensor_id,
+            "zone": binding.zone,
+            "mode": binding.mode,
+            "port": binding.port,
+            "profile": binding.profile,
+            "status": zone_status(reading, advice, binding.mode),
         }
         if reading is not None:
             readings[sensor_id] = reading
@@ -173,6 +205,14 @@ def build_state_payload(state: WorkshopState) -> dict:
     payload = {
         "growth_stage": state.config.growth_stage,
         "language": state.config.language,
+        # site_name and transplanting_date are exposed here, not only saved
+        # to config.json, so the operator console can pre-fill its form with
+        # what is already set rather than showing blank fields over live
+        # values. See the operator console pre-fill on load.
+        "site_name": state.config.site_name,
+        "transplanting_date": state.config.transplanting_date,
+        "field_image": state.config.field_image,
+        "field_view": list(state.config.field_view),
         "simulated": simulated,
         "sensors": sensors,
     }
@@ -210,6 +250,7 @@ def build_ws_payload(
     this is the reading on which the probe insertion moment was detected,
     and a comparison block once a second configured sensor has a reading
     of its own."""
+    binding = state.config.sensors.get(sensor_id)
     payload = {
         "sensor_id": sensor_id,
         "reading": serialise_reading(reading),
@@ -222,6 +263,9 @@ def build_ws_payload(
         # only taking effect on a fresh page load.
         "language": state.config.language,
         "simulated": reading.source != Reading.SOURCE_LIVE,
+        # The plot's overall state, so the field map recolours this plot on
+        # the tick rather than recomputing severity itself.
+        "status": zone_status(reading, advice, binding.mode if binding else "simulate"),
     }
 
     sensor_ids = list(state.config.sensors)

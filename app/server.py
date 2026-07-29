@@ -94,6 +94,30 @@ class SensorBindRequest(BaseModel):
     port: str = "COM9"
     profile: str = "data/profiles/sn3002.json"
     mode: str = "simulate"
+    # Optional plot metadata. When omitted the sensor keeps whatever label
+    # and outline it already had, so switching a plot between live and
+    # simulation from the field map never erases the zone the operator drew.
+    name: str | None = None
+    zone: list | None = None
+
+
+class ZoneRequest(BaseModel):
+    """One plot as drawn in the zone editor."""
+
+    id: str
+    name: str = ""
+    mode: str = "simulate"
+    port: str = "COM9"
+    profile: str = "data/profiles/sn3002.json"
+    zone: list | None = None
+
+
+class ZonesUpdateRequest(BaseModel):
+    """The full set of plots the operator laid out on the field photo."""
+
+    zones: list[ZoneRequest]
+    field_image: str | None = None
+    field_view: list | None = None
 
 
 async def _default_sleep(seconds: float) -> None:
@@ -181,7 +205,10 @@ def create_app(state: WorkshopState) -> FastAPI:
 
     @app.websocket("/ws")
     async def websocket_feed(websocket: WebSocket, sensor_id: str = "probe-a"):
-        if sensor_id not in state.readers:
+        # A None reader means an unknown sensor or a detached plot (mode
+        # 'off'): there is no feed to open, so reject rather than accept a
+        # socket that would only ever report the sensor as not responding.
+        if state.readers.get(sensor_id) is None:
             await websocket.close(code=4004)
             return
         await websocket.accept()
@@ -324,15 +351,60 @@ def create_app(state: WorkshopState) -> FastAPI:
 
     @app.post("/api/sensors/{sensor_id}/bind")
     def bind_sensor(sensor_id: str, payload: SensorBindRequest):
+        # Preserve the plot label and outline across a rebind unless the
+        # caller supplies new ones: switching a plot between live and
+        # simulation must not wipe the zone the operator drew for it.
+        existing = state.config.sensors.get(sensor_id)
+        name = payload.name if payload.name is not None else (existing.name if existing else "")
+        zone = payload.zone if payload.zone is not None else (existing.zone if existing else None)
         state.readers[sensor_id] = build_reader(
             payload.port, payload.profile, sensor_id, payload.mode
         )
         state.detectors[sensor_id] = StepChangeDetector()
         state.config.sensors[sensor_id] = SensorBinding(
-            port=payload.port, profile=payload.profile, mode=payload.mode
+            port=payload.port, profile=payload.profile, mode=payload.mode, name=name, zone=zone
         )
         state.config.save(state.config_path)
         return {"sensor_id": sensor_id, "mode": payload.mode}
+
+    @app.post("/api/zones")
+    def update_zones(payload: ZonesUpdateRequest):
+        """Replace the full set of plots with what the operator drew in the
+        zone editor.
+
+        A sensor dropped from the list is removed with its reader; a new one
+        gets a reader built. A plot that only changed shape or label keeps
+        its existing reader, so re-saving a layout does not needlessly
+        reopen serial ports or reseed simulations for unchanged plots.
+        """
+        if payload.field_image is not None:
+            state.config.field_image = payload.field_image
+        if payload.field_view is not None:
+            state.config.field_view = list(payload.field_view)
+
+        new_sensors = {
+            z.id: SensorBinding(port=z.port, profile=z.profile, mode=z.mode, name=z.name, zone=z.zone)
+            for z in payload.zones
+        }
+        for sensor_id in list(state.readers):
+            if sensor_id not in new_sensors:
+                state.readers.pop(sensor_id, None)
+                state.detectors.pop(sensor_id, None)
+        for sensor_id, binding in new_sensors.items():
+            existing = state.config.sensors.get(sensor_id)
+            wiring_changed = existing is None or (
+                existing.port,
+                existing.profile,
+                existing.mode,
+            ) != (binding.port, binding.profile, binding.mode)
+            if wiring_changed or sensor_id not in state.readers:
+                state.readers[sensor_id] = build_reader(
+                    binding.port, binding.profile, sensor_id, binding.mode
+                )
+                state.detectors[sensor_id] = StepChangeDetector()
+        state.config.sensors = new_sensors
+        state.config.save(state.config_path)
+        return build_state_payload(state)
 
     @app.post("/api/demo-reset")
     def demo_reset():

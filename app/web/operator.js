@@ -211,6 +211,65 @@ function wireSession() {
   });
 }
 
+function ensureOption(select, value, label) {
+  // Select `value`, adding it as an option first if the enumerated list
+  // does not contain it. A saved COM port or profile that is not present
+  // on this machine right now still shows as the current selection rather
+  // than silently falling back to the first listed option.
+  if (!select || !value) return;
+  const exists = Array.from(select.options).some((option) => option.value === value);
+  if (!exists) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label || value;
+    select.appendChild(option);
+  }
+  select.value = value;
+}
+
+function populateSensorSelect(selectId, sensors, selectedId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const ids = Object.keys(sensors);
+  if (ids.length === 0) return;
+  select.innerHTML = "";
+  ids.forEach((id) => {
+    const option = document.createElement("option");
+    option.value = id;
+    const name = sensors[id] && sensors[id].name ? sensors[id].name : id;
+    option.textContent = name && name !== id ? `${name} (${id})` : id;
+    select.appendChild(option);
+  });
+  if (selectedId && ids.includes(selectedId)) select.value = selectedId;
+}
+
+function fillBindFields(sensor) {
+  if (!sensor) return;
+  ensureOption(document.getElementById("bind-port"), sensor.port, sensor.port);
+  ensureOption(document.getElementById("bind-profile"), sensor.profile, sensor.profile);
+  if (sensor.mode) ensureOption(document.getElementById("bind-mode"), sensor.mode, sensor.mode);
+}
+
+function prefillSettings(state) {
+  // Show what is actually saved. Before this, the console opened with every
+  // field blank or on its first option, over live values, so an operator
+  // could not tell what the current growth stage, site name or per-sensor
+  // binding was without changing it. Now each control reflects config.json.
+  if (state.growth_stage) document.getElementById("growth-stage").value = state.growth_stage;
+  document.getElementById("site-name").value = state.site_name || "";
+
+  const sensors = state.sensors || {};
+  const firstId = Object.keys(sensors)[0];
+  populateSensorSelect("bind-sensor-id", sensors, firstId);
+  populateSensorSelect("scenario-sensor-id", sensors, firstId);
+  if (firstId) fillBindFields(sensors[firstId]);
+
+  const bindSensor = document.getElementById("bind-sensor-id");
+  if (bindSensor) {
+    bindSensor.addEventListener("change", () => fillBindFields(sensors[bindSensor.value]));
+  }
+}
+
 async function start() {
   // A failing /api/ports (no dongle driver installed, or the port list
   // enumeration throwing on this machine) must not take down every other
@@ -223,10 +282,11 @@ async function start() {
     setStatus("bind-status", `Gagal memuat daftar port/profil: ${error.message}`);
   }
 
+  let state = null;
   let initialLanguage = "id";
   try {
     const stateResponse = await fetch("/api/state");
-    const state = await stateResponse.json();
+    state = await stateResponse.json();
     initialLanguage = state.language;
   } catch (error) {
     // Falls back to "id", the application default, if /api/state cannot
@@ -240,6 +300,10 @@ async function start() {
   wirePuts();
   wireScenario();
   wireSession();
+
+  // Pre-fill after the controls are wired and the port/profile option
+  // lists are loaded, so the current selection lands on real options.
+  if (state) prefillSettings(state);
 }
 
 start();

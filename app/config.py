@@ -25,11 +25,21 @@ DEFAULT_SENSOR_ID = "probe-a"
 
 @dataclass
 class SensorBinding:
-    """How one sensor slot is currently wired up."""
+    """How one sensor slot is currently wired up.
+
+    ``name`` is the farmer-facing plot label shown on the field map (for
+    example "Blok 1"); it falls back to the sensor id when empty. ``zone``
+    is the plot outline the operator drew in the zone editor, a list of
+    ``[x, y]`` points in the field image's coordinate space
+    (``WorkshopConfig.field_view``). It is None until a zone has been
+    placed, in which case that sensor simply does not appear on the map.
+    """
 
     port: str = "COM9"
     profile: str = "data/profiles/sn3002.json"
     mode: str = "simulate"
+    name: str = ""
+    zone: list | None = None
 
 
 @dataclass
@@ -70,6 +80,13 @@ class WorkshopConfig:
     site_name: str = ""
     growth_stage: str = GROWTH_STAGES[0]
     transplanting_date: str | None = None
+    # The aerial photo the field map is drawn on, served from app/web, and
+    # the coordinate space (width, height) that every sensor ``zone``
+    # polygon is expressed in. A drone or satellite shot of the real plot
+    # can replace the bundled default without touching any zone as long as
+    # the operator re-traces against the new image.
+    field_image: str = "assets/field-default.jpg"
+    field_view: list = field(default_factory=lambda: [1537, 1023])
     sensors: dict[str, SensorBinding] = field(
         default_factory=lambda: {DEFAULT_SENSOR_ID: SensorBinding()}
     )
@@ -91,6 +108,8 @@ class WorkshopConfig:
             site_name=data.get("site_name", ""),
             growth_stage=data.get("growth_stage", GROWTH_STAGES[0]),
             transplanting_date=data.get("transplanting_date"),
+            field_image=data.get("field_image", "assets/field-default.jpg"),
+            field_view=data.get("field_view") or [1537, 1023],
             sensors=sensors,
         )
 
@@ -104,6 +123,8 @@ class WorkshopConfig:
             "site_name": self.site_name,
             "growth_stage": self.growth_stage,
             "transplanting_date": self.transplanting_date,
+            "field_image": self.field_image,
+            "field_view": list(self.field_view),
             "sensors": {
                 sensor_id: asdict(binding) for sensor_id, binding in self.sensors.items()
             },
