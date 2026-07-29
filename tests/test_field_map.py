@@ -174,6 +174,42 @@ def test_zones_endpoint_replaces_the_plot_set(tmp_path):
     assert "probe-a" not in state.readers
 
 
+def test_zones_endpoint_starts_new_simulate_plots_in_soil(tmp_path):
+    # A field-map demo treats simulated plots as probes already in the ground,
+    # so a plot created via the zone editor reads soil, not air (which would
+    # read moisture 0 and fire a false "reflood now" alert).
+    state = make_state(sensors={"probe-a": {"mode": "simulate"}}, config_path=tmp_path / "config.json")
+    client = TestClient(create_app(state))
+    client.post(
+        "/api/zones",
+        json={"zones": [{"id": "S1", "name": "Blok 1", "mode": "simulate", "zone": [[0, 0], [10, 0], [5, 9]]}]},
+    )
+    reading = state.readers["S1"].read_once(NOW)
+    assert reading.values["moisture"] > 20.0
+
+
+def test_rebind_to_simulate_in_map_mode_starts_in_soil(tmp_path):
+    # Switching a plot to simulation from the map detail must not read air.
+    state = make_state(
+        sensors={"S1": {"mode": "off", "name": "Blok 1", "zone": [[0, 0], [10, 0], [5, 9]]}},
+        config_path=tmp_path / "config.json",
+    )
+    client = TestClient(create_app(state))
+    client.post("/api/sensors/S1/bind", json={"mode": "simulate"})
+    reading = state.readers["S1"].read_once(NOW)
+    assert reading.values["moisture"] > 20.0
+
+
+def test_rebind_without_any_zone_keeps_the_probe_in_air(tmp_path):
+    # The single-probe demo (no zones) keeps its probe in air for the hands-on
+    # insertion moment; a rebind must not silently put it in soil.
+    state = make_state(sensors={"probe-a": {"mode": "simulate"}}, config_path=tmp_path / "config.json")
+    client = TestClient(create_app(state))
+    client.post("/api/sensors/probe-a/bind", json={"mode": "simulate"})
+    reading = state.readers["probe-a"].read_once(NOW)
+    assert reading.values["moisture"] == 0.0
+
+
 def test_zones_endpoint_reshape_keeps_existing_reader(tmp_path):
     state = make_state(
         sensors={"S1": {"mode": "simulate", "zone": [[0, 0], [1, 0], [1, 1]]}},

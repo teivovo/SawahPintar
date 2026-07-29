@@ -681,9 +681,15 @@ function connectFeed(sensorId) {
       applyUpdate(message.sensor_id, message.reading, message.advice, message.simulated);
     }
   });
-  socket.addEventListener("close", () => {
-    // Do not reconnect a plot the operator has detached on purpose.
-    if (plots[sensorId] && plots[sensorId].mode === "off") return;
+  socket.addEventListener("close", (event) => {
+    // A newer socket has already replaced this one (a rapid detach then
+    // re-attach): let the newer one own the connection state.
+    if (sockets[sensorId] !== socket) return;
+    // Do not reconnect a plot the operator detached on purpose, nor one the
+    // server rejected with code 4004 (the plot is gone from the layout, or
+    // has no sensor) - reconnecting there is a permanent loop against a plot
+    // that no longer exists.
+    if ((plots[sensorId] && plots[sensorId].mode === "off") || event.code === 4004) return;
     // The dials and cards keep showing the last values they had, with no
     // visual cue that the feed is dead, which is stale data presented as
     // current for as long as the probe or the dongle stays disconnected.

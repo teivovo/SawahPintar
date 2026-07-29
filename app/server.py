@@ -124,6 +124,16 @@ async def _default_sleep(seconds: float) -> None:
     await asyncio.sleep(seconds)
 
 
+def _insert_if_map_mode(reader, map_mode: bool) -> None:
+    """In a field-map demo (any plot has a zone drawn) a simulated plot is a
+    probe already in the ground, so a reader built after startup - by a
+    rebind or a zone save - must be put in soil too, matching what app.main
+    does once at startup. Without this a fresh simulate reader reads air and
+    the map shows a false "reflood now" alert. A no-op for live readers."""
+    if map_mode and reader is not None and hasattr(reader, "insert_probe"):
+        reader.insert_probe()
+
+
 async def broadcast_loop(
     websocket,
     state: WorkshopState,
@@ -151,8 +161,16 @@ async def broadcast_loop(
     sent = 0
 
     while stop_after is None or sent < stop_after:
-        reader = state.readers[sensor_id]
-        detector = state.detectors[sensor_id]
+        reader = state.readers.get(sensor_id)
+        detector = state.detectors.get(sensor_id)
+        # The plot may be detached (mode 'off') or removed from the layout
+        # entirely (POST /api/zones) while this socket is open. Either leaves
+        # no reader. Close cleanly with the same code the connect guard uses,
+        # rather than indexing a missing key and crashing the socket with an
+        # unhandled KeyError that would trap the client in a reconnect loop.
+        if reader is None:
+            await websocket.close(code=4004)
+            return
         # read_once() is a synchronous, blocking serial call bounded by the
         # sensor profile's timeout (1.0 s by default). Run it off the event
         # loop thread so a probe that has stopped answering stalls only
@@ -357,13 +375,13 @@ def create_app(state: WorkshopState) -> FastAPI:
         existing = state.config.sensors.get(sensor_id)
         name = payload.name if payload.name is not None else (existing.name if existing else "")
         zone = payload.zone if payload.zone is not None else (existing.zone if existing else None)
-        state.readers[sensor_id] = build_reader(
-            payload.port, payload.profile, sensor_id, payload.mode
-        )
+        reader = build_reader(payload.port, payload.profile, sensor_id, payload.mode)
+        state.readers[sensor_id] = reader
         state.detectors[sensor_id] = StepChangeDetector()
         state.config.sensors[sensor_id] = SensorBinding(
             port=payload.port, profile=payload.profile, mode=payload.mode, name=name, zone=zone
         )
+        _insert_if_map_mode(reader, any(b.zone for b in state.config.sensors.values()))
         state.config.save(state.config_path)
         return {"sensor_id": sensor_id, "mode": payload.mode}
 
@@ -386,22 +404,27 @@ def create_app(state: WorkshopState) -> FastAPI:
             z.id: SensorBinding(port=z.port, profile=z.profile, mode=z.mode, name=z.name, zone=z.zone)
             for z in payload.zones
         }
+        map_mode = any(binding.zone for binding in new_sensors.values())
         for sensor_id in list(state.readers):
             if sensor_id not in new_sensors:
                 state.readers.pop(sensor_id, None)
                 state.detectors.pop(sensor_id, None)
+        old_sensors = state.config.sensors
         for sensor_id, binding in new_sensors.items():
-            existing = state.config.sensors.get(sensor_id)
+            existing = old_sensors.get(sensor_id)
             wiring_changed = existing is None or (
                 existing.port,
                 existing.profile,
                 existing.mode,
             ) != (binding.port, binding.profile, binding.mode)
             if wiring_changed or sensor_id not in state.readers:
-                state.readers[sensor_id] = build_reader(
-                    binding.port, binding.profile, sensor_id, binding.mode
-                )
+                reader = build_reader(binding.port, binding.profile, sensor_id, binding.mode)
+                state.readers[sensor_id] = reader
                 state.detectors[sensor_id] = StepChangeDetector()
+                # Newly built simulate plots start in soil in a field-map
+                # demo, so a saved layout shows soil values, not a false
+                # air-reads-dry "reflood now" alert.
+                _insert_if_map_mode(reader, map_mode)
         state.config.sensors = new_sensors
         state.config.save(state.config_path)
         return build_state_payload(state)

@@ -46,6 +46,15 @@ class RecordingWebSocket:
         self.sent.append(payload)
 
 
+class ClosableWebSocket(RecordingWebSocket):
+    def __init__(self) -> None:
+        super().__init__()
+        self.closed_code: int | None = None
+
+    async def close(self, code: int = 1000) -> None:
+        self.closed_code = code
+
+
 class StubClock:
     def __init__(self, start: datetime) -> None:
         self.now = start
@@ -69,6 +78,26 @@ def make_state(evaluate_fn=fake_evaluate):
     db.initialise_schema(connection)
     config = WorkshopConfig.from_dict({"sensors": {"probe-a": {"mode": "simulate"}}})
     return WorkshopState.build(connection, config, "config.json", evaluate_fn=evaluate_fn)
+
+
+def test_broadcast_loop_closes_cleanly_when_its_plot_is_removed():
+    """Removing a plot from the layout (POST /api/zones pops its reader) while
+    a feed is open must close the socket with 4004, not crash with a KeyError
+    that escapes broadcast_loop and traps the client in a reconnect loop."""
+    state = make_state()
+    state.readers["probe-a"].insert_probe()
+    websocket = ClosableWebSocket()
+    sleep, _ = make_recording_sleep()
+    # The plot is removed before the loop's next read.
+    del state.readers["probe-a"]
+    del state.detectors["probe-a"]
+
+    asyncio.run(
+        broadcast_loop(websocket, state, "probe-a", clock=StubClock(NOW), sleep=sleep, stop_after=3)
+    )
+
+    assert websocket.closed_code == 4004
+    assert websocket.sent == []  # never indexed a missing reader
 
 
 def test_broadcast_loop_persists_and_sends_each_reading():
