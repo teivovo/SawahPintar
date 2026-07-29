@@ -96,6 +96,22 @@ def test_state_payload_name_falls_back_to_sensor_id():
     assert body["sensors"]["S1"]["name"] == "S1"
 
 
+def test_detached_plot_reports_no_reading_even_with_seeded_history():
+    # A plot switched off still has seeded rows in the DB; the map must not
+    # surface advice for a plot that has no sensor.
+    state = make_state(
+        sensors={"S1": {"mode": "off", "zone": [[0, 0], [1, 0], [1, 1]]}},
+        evaluate_fn=lambda *a, **k: [_Card("red")],
+    )
+    db.insert_reading(
+        state.con, Reading(NOW, "S1", {"moisture": 12.0}, source=Reading.SOURCE_SEED)
+    )
+    plot = TestClient(create_app(state)).get("/api/state").json()["sensors"]["S1"]
+    assert plot["reading"] is None
+    assert plot["advice"] == []
+    assert plot["status"] == "idle"
+
+
 def test_state_payload_status_reflects_advice(monkeypatch):
     state = make_state(
         sensors={"S1": {"mode": "simulate", "zone": [[0, 0], [1, 0], [1, 1]]}},

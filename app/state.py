@@ -182,7 +182,14 @@ def build_state_payload(state: WorkshopState) -> dict:
     readings: dict[str, Reading] = {}
 
     for sensor_id, binding in state.config.sensors.items():
-        reading = db.latest(state.con, sensor_id)
+        # A detached plot (mode 'off') has no sensor, so it reports no
+        # reading and no advice regardless of any stale seeded history that
+        # may exist for its id: it shows on the map as idle, not as a plot
+        # carrying advice no probe produced.
+        if binding.mode == "off":
+            reading = None
+        else:
+            reading = db.latest(state.con, sensor_id)
         advice = state.latest_advice(sensor_id, reading) if reading is not None else []
         sensors[sensor_id] = {
             "reading": serialise_reading(reading),

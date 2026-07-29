@@ -253,3 +253,95 @@ body {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Field map (Peta lahan) --------------------------------------------
+   Shown when plots have been drawn in the zone editor. The plot's alert
+   colour is laid over the aerial photo; a dark scrim under the zones keeps
+   the colours and labels legible. Light palette only, like the rest of
+   this farmer display. */
+.field-map {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto 16px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: #4b5333;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.field-map svg { display: block; width: 100%; height: auto; }
+
+.map-zone { cursor: pointer; }
+.map-zone:focus-visible { outline: none; }
+.map-zone-fill { transition: fill-opacity 0.15s ease; }
+.map-zone:hover .map-zone-fill { fill-opacity: 0.62; }
+.map-zone-outline { fill: none; stroke: #ffffff; stroke-width: 5; opacity: 0; }
+.map-zone.selected .map-zone-outline { opacity: 1; }
+
+.map-zone-label {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  fill: #16210c;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 5px;
+  paint-order: stroke;
+  pointer-events: none;
+}
+
+.map-legend {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 15px;
+  display: grid;
+  gap: 5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.legend-row { display: flex; align-items: center; gap: 8px; }
+.legend-swatch { width: 14px; height: 14px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2); }
+
+.field-summary {
+  max-width: 1100px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #eef2ea;
+}
+
+.summary-headline { font-weight: 700; font-size: 22px; margin-right: auto; }
+
+.summary-stat {
+  font-size: 17px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--colour-paper);
+  box-shadow: inset 0 0 0 1px #d5dcc8;
+}
+
+.summary-stat.stat-good { color: var(--colour-green); }
+.summary-stat.stat-attention { color: var(--colour-amber); }
+.summary-stat.stat-critical { color: var(--colour-red); }
+.summary-stat.stat-idle { color: var(--colour-muted); }
+
+.detail { max-width: 1100px; margin: 0 auto; }
+.detail-title { font-size: 26px; font-weight: 800; margin: 4px 4px 12px; }
+.detail-note {
+  margin: 0 4px 16px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: #f3f5f7;
+  color: var(--colour-muted);
+  font-size: 20px;
+  border: 2px dashed #d1d5db;
+}

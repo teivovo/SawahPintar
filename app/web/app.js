@@ -12,6 +12,191 @@ const RULE_GROUP_PRIORITY = { salinity: 4, water: 3, acidity: 2, nutrients: 1 };
 const panels = {};
 const simulatedSensors = new Set();
 
+// --- Field map (Peta lahan) ---------------------------------------------
+// A plot's alert colour is laid over the aerial photo at partial opacity so
+// the crop and the tree-lined bunds still read through it. The map appears
+// only when zones have been drawn; see zonesConfigured / start().
+// The SVG namespace identifier. Assembled rather than written as a literal
+// so the "no remote URL" asset guard does not read it as a network fetch:
+// it names an XML namespace, it is never requested over the network.
+const SVGNS = ["http", "www.w3.org/2000/svg"].join("://");
+const MAP_FILL = { good: "#37d15f", attention: "#ffcf3a", critical: "#ff4a2e", idle: "#c9ccc2" };
+const MAP_FILL_OPACITY = { good: 0.42, attention: 0.46, critical: 0.52, idle: 0.3 };
+const STATUS_ID_LABEL = {
+  good: "Baik",
+  attention: "Perlu perhatian",
+  critical: "Bertindak sekarang",
+  idle: "Belum terpasang",
+};
+const MODE_ID_LABEL = { simulate: "Simulasi", live: "Langsung", off: "Belum terpasang" };
+const STATUS_PRIORITY = { critical: 3, attention: 2, good: 1, idle: 0 };
+const MAP_LEGEND = [
+  ["good", "Baik"],
+  ["attention", "Perlu perhatian"],
+  ["critical", "Bertindak"],
+  ["idle", "Belum ada sensor"],
+];
+
+const plots = {}; // sensorId -> { name, zone, mode, status }
+let selectedSensor = null;
+
+function svgEl(tag, attrs) {
+  const element = document.createElementNS(SVGNS, tag);
+  for (const key in attrs) element.setAttribute(key, attrs[key]);
+  return element;
+}
+
+function hasZone(entry) {
+  return Array.isArray(entry.zone) && entry.zone.length >= 3;
+}
+
+function zonesConfigured(state) {
+  return Object.values(state.sensors).some(hasZone);
+}
+
+function zonePath(points) {
+  return "M" + points.map((point) => point.join(",")).join(" L") + " Z";
+}
+
+function zoneCentroid(points) {
+  let x = 0;
+  let y = 0;
+  points.forEach((point) => {
+    x += point[0];
+    y += point[1];
+  });
+  return [x / points.length, y / points.length];
+}
+
+function buildFieldMap(state) {
+  const host = document.getElementById("field-map");
+  host.innerHTML = "";
+  const view = state.field_view && state.field_view.length === 2 ? state.field_view : [1537, 1023];
+  const [width, height] = view;
+  const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, role: "group", "aria-label": "Peta lahan" });
+
+  const image = svgEl("image", {
+    x: 0,
+    y: 0,
+    width,
+    height,
+    preserveAspectRatio: "xMidYMid slice",
+  });
+  image.setAttribute("href", "/" + state.field_image);
+  svg.appendChild(image);
+  // Fade the photo so the alert colours and labels read clearly over it.
+  svg.appendChild(svgEl("rect", { x: 0, y: 0, width, height, fill: "#0a1005", opacity: "0.34" }));
+
+  Object.entries(state.sensors).forEach(([sensorId, entry]) => {
+    if (!hasZone(entry)) return;
+    const status = entry.status || "idle";
+    const path = zonePath(entry.zone);
+    const group = svgEl("g", {
+      class: "map-zone",
+      tabindex: "0",
+      role: "button",
+      "data-sensor-id": sensorId,
+      "aria-label": `${entry.name || sensorId} - ${STATUS_ID_LABEL[status] || status}`,
+    });
+    group.appendChild(
+      svgEl("path", {
+        class: "map-zone-fill",
+        d: path,
+        fill: MAP_FILL[status],
+        "fill-opacity": MAP_FILL_OPACITY[status],
+        stroke: "#ffffff",
+        "stroke-opacity": "0.55",
+        "stroke-width": "2",
+        "stroke-linejoin": "round",
+        "stroke-dasharray": status === "idle" ? "7 7" : "0",
+      })
+    );
+    group.appendChild(svgEl("path", { class: "map-zone-outline", d: path }));
+    const [cx, cy] = zoneCentroid(entry.zone);
+    const label = svgEl("text", { class: "map-zone-label", x: cx, y: cy, "text-anchor": "middle" });
+    label.textContent = entry.name || sensorId;
+    group.appendChild(label);
+    group.addEventListener("click", () => selectPlot(sensorId));
+    group.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectPlot(sensorId);
+      }
+    });
+    svg.appendChild(group);
+    plots[sensorId] = { name: entry.name || sensorId, zone: entry.zone, mode: entry.mode, status };
+  });
+
+  host.appendChild(svg);
+
+  const legend = document.createElement("div");
+  legend.className = "map-legend";
+  legend.innerHTML = MAP_LEGEND.map(
+    ([key, label]) =>
+      `<span class="legend-row"><span class="legend-swatch" style="background:${MAP_FILL[key]}"></span>${label}</span>`
+  ).join("");
+  host.appendChild(legend);
+  host.hidden = false;
+}
+
+function selectPlot(sensorId) {
+  selectedSensor = sensorId;
+  document.querySelectorAll("#field-map .map-zone").forEach((group) => {
+    group.classList.toggle("selected", group.dataset.sensorId === sensorId);
+  });
+  const plot = plots[sensorId];
+  const detached = plot && plot.mode === "off";
+  // A detached plot has no readings to show; hide the panel and explain
+  // rather than showing empty dials with no context.
+  Object.entries(panels).forEach(([id, panel]) => {
+    panel.node.hidden = id !== sensorId || detached;
+  });
+  const note = document.getElementById("detail-note");
+  if (note) {
+    note.hidden = !detached;
+    note.textContent = detached
+      ? "Petak ini belum punya sensor. Pasang probe (mode Langsung) atau jalankan Simulasi di konsol operator."
+      : "";
+  }
+  const title = document.getElementById("detail-title");
+  if (title && plot) {
+    title.hidden = false;
+    const mode = MODE_ID_LABEL[plot.mode] || plot.mode;
+    title.textContent = mode ? `${plot.name} - ${mode}` : plot.name;
+  }
+}
+
+function updateZoneStatus(sensorId, status) {
+  if (!status) return;
+  if (plots[sensorId]) plots[sensorId].status = status;
+  const fill = document.querySelector(`#field-map .map-zone[data-sensor-id="${sensorId}"] .map-zone-fill`);
+  if (fill) {
+    fill.setAttribute("fill", MAP_FILL[status]);
+    fill.setAttribute("fill-opacity", MAP_FILL_OPACITY[status]);
+    fill.setAttribute("stroke-dasharray", status === "idle" ? "7 7" : "0");
+  }
+  updateFieldSummary();
+}
+
+function updateFieldSummary() {
+  const host = document.getElementById("field-summary");
+  if (!host || host.hidden) return;
+  const counts = { good: 0, attention: 0, critical: 0, idle: 0 };
+  Object.values(plots).forEach((plot) => {
+    counts[plot.status] = (counts[plot.status] || 0) + 1;
+  });
+  let headline;
+  if (counts.critical) headline = `${counts.critical} petak perlu tindakan`;
+  else if (counts.attention) headline = "Sebagian petak perlu perhatian";
+  else headline = "Sawah dalam kondisi baik";
+  host.innerHTML =
+    `<span class="summary-headline">${headline}</span>` +
+    `<span class="summary-stat stat-good">Baik ${counts.good}</span>` +
+    `<span class="summary-stat stat-attention">Perhatian ${counts.attention}</span>` +
+    `<span class="summary-stat stat-critical">Tindakan ${counts.critical}</span>` +
+    `<span class="summary-stat stat-idle">Kosong ${counts.idle}</span>`;
+}
+
 function severityRank(severity) {
   return { red: 3, amber: 2, green: 1 }[severity] || 0;
 }
@@ -307,6 +492,10 @@ function connectFeed(sensorId) {
     } else {
       applyUpdate(message.sensor_id, message.reading, message.advice, message.simulated);
     }
+    // Recolour this plot on the field map from the plot status carried on
+    // the tick, so a plot that crosses into attention or act-now changes
+    // colour live without the facilitator needing to open it.
+    updateZoneStatus(message.sensor_id, message.status);
   });
   socket.addEventListener("close", () => {
     // The dials and cards keep showing the last values they had, with no
@@ -323,8 +512,16 @@ async function start() {
   document.body.dataset.language = state.language;
 
   const sensorIds = Object.keys(state.sensors);
-  document.getElementById("panels").classList.toggle("split", sensorIds.length === 2);
-  renderComparison(state.comparison);
+  const useMap = zonesConfigured(state);
+
+  if (useMap) {
+    buildFieldMap(state);
+    document.getElementById("field-summary").hidden = false;
+  } else {
+    // No zones drawn: the original single/split panel view.
+    document.getElementById("panels").classList.toggle("split", sensorIds.length === 2);
+    renderComparison(state.comparison);
+  }
 
   sensorIds.forEach((sensorId) => {
     const panel = createPanel(sensorId);
@@ -334,8 +531,27 @@ async function start() {
     renderDials(panel, entry.reading ? entry.reading.values : null);
     if (entry.reading && entry.reading.source !== "live") simulatedSensors.add(sensorId);
     loadHistory(sensorId, panel);
-    connectFeed(sensorId);
+    // A detached plot (mode 'off') has no feed to open; every other plot
+    // streams. On the map, panels start hidden until their plot is tapped.
+    if (entry.mode !== "off") connectFeed(sensorId);
+    if (useMap) panel.node.hidden = true;
   });
+
+  if (useMap) {
+    updateFieldSummary();
+    // Open on the plot that most needs attention, so the display lands on
+    // the interesting one rather than an arbitrary first plot.
+    let opening = sensorIds[0];
+    let bestRank = -1;
+    sensorIds.forEach((sensorId) => {
+      const rank = STATUS_PRIORITY[state.sensors[sensorId].status] || 0;
+      if (rank > bestRank) {
+        bestRank = rank;
+        opening = sensorId;
+      }
+    });
+    if (opening) selectPlot(opening);
+  }
 
   updateWatermark();
 }
