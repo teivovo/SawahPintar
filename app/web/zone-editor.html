@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SawahPintar - Editor Petak</title>
+<link rel="stylesheet" href="/zone-editor.css">
+</head>
+<body>
+  <header class="ze-header">
+    <h1>Editor Petak Sawah</h1>
+    <a class="back-link" href="/operator">Kembali ke konsol operator</a>
+  </header>
+
+  <p class="ze-help">
+    Gambar setiap petak di atas foto lahan, satu petak untuk satu sensor.
+    <b>Seret lingkaran</b> di sudut untuk memindahkannya, <b>seret titik kecil</b>
+    di tengah garis untuk menambah sudut, <b>klik dua kali</b> sudut untuk
+    menghapusnya, dan <b>seret bagian dalam</b> petak untuk memindahkan seluruhnya.
+    Tekan <b>Simpan</b> untuk menyimpan tata letak.
+    <span class="ze-en">Draw one plot per sensor on the field photo, then Save.</span>
+  </p>
+
+  <div class="ze-layout">
+    <div class="ze-map" id="mapHost"></div>
+
+    <aside class="ze-panel">
+      <div class="ze-btn-row">
+        <button class="ze-btn primary" id="addBtn" type="button">+ Tambah petak</button>
+        <button class="ze-btn" id="reloadBtn" type="button">Muat ulang</button>
+      </div>
+      <div class="ze-list" id="zoneList"></div>
+
+      <div class="ze-active" id="activePanel" hidden>
+        <h2>Petak aktif</h2>
+        <label>Nama <input type="text" id="active-name"></label>
+        <label>Sumber
+          <select id="active-mode">
+            <option value="simulate">Simulasi</option>
+            <option value="live">Langsung (probe asli)</option>
+            <option value="off">Lepas (tanpa sensor)</option>
+          </select>
+        </label>
+        <label class="port-field" id="port-field">Port <input type="text" id="active-port" value="COM9"></label>
+        <p class="ze-active-meta" id="activeMeta"></p>
+      </div>
+
+      <div class="ze-save-row">
+        <button class="ze-btn primary" id="saveBtn" type="button">Simpan tata letak</button>
+        <a class="ze-btn" href="/">Lihat tampilan petani</a>
+      </div>
+      <p class="ze-status" id="saveStatus"></p>
+    </aside>
+  </div>
+
+  <script src="/zone-editor.js"></script>
+</body>
+</html>
