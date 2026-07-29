@@ -876,19 +876,25 @@ function openOperatorConsole() {
   window.location.href = "/operator";
 }
 
+function openPlotEditor() {
+  window.location.href = "/zone-editor.html";
+}
+
 window.addEventListener("keydown", (event) => {
   if (event.ctrlKey && event.altKey && event.key.toLowerCase() === "o") {
     openOperatorConsole();
   }
 });
 
-// A discreet gear in the corner opens the operator console. It is kept small
-// and low-contrast so it does not compete with the farmer-facing content, but
-// it gives the facilitator a visible way in rather than relying on the
-// Ctrl+Alt+O keystroke, which is hard to discover. The keystroke still works.
+// The discreet gear opens the plot editor - the main setup surface now: draw
+// a plot per sensor, and set each plot's source, name and growth stage. The
+// operator console (PUTS entry, data export, field card, register inspector)
+// is reached from the plot editor, or directly with the Ctrl+Alt+O keystroke.
+// The gear is kept small and low-contrast so it does not compete with the
+// farmer-facing content.
 const operatorLink = document.getElementById("operator-link");
 if (operatorLink) {
-  operatorLink.addEventListener("click", openOperatorConsole);
+  operatorLink.addEventListener("click", openPlotEditor);
 }
 
 start();
