@@ -1,29 +1,60 @@
-# Bilingual advice content pack. Every entry below is a draft awaiting
-# review by Universitas Hasanuddin faculty: see docs/reviewing-the-copy.md
-# for how to check and correct this wording. Wording, icon keys and colour
-# semantics are all unreviewed placeholders, not final farmer-facing text.
-# The pooled 64.5 per cent salinity yield-loss figure from the meta-analysis
-# (docs/references.md, source 1) must never appear here: it is a pooled
-# experimental mean, not a typical field loss.
+# =============================================================================
+# SawahPintar - bilingual advice content pack (DRAFT, awaiting review)
+# =============================================================================
 #
-# The "when" line on each entry states the condition that triggers that
-# message, in plain terms, so an agronomist can check whether the advice fits
-# the condition, not only the wording. The program does not read the "when"
-# line; it is documentation only, and the real triggering logic lives in
-# data/rules/default.yaml. The salinity class and the water-table depth used
-# below are DERIVED from the probe's bulk conductivity and moisture through the
-# provisional calibration in data/calibration/default.yaml, so the conductivity
-# and moisture figures quoted here are illustrative placeholders. Note that
-# bulk conductivity is not the same physical quantity as the saturated paste
-# extract conductivity used in the published salinity thresholds. Both the
-# wording and these breakpoints are open for review.
+# Every entry below is a DRAFT awaiting review by Universitas Hasanuddin.
+# The full guide is docs/reviewing-the-copy.md. Two kinds of reviewer use this
+# file:
+#   - LANGUAGE reviewer : checks and improves the Bahasa Indonesia - the
+#                         headline_id and body_id lines, and the action_id
+#                         wording in the npk_estimate block near the bottom.
+#   - AGRONOMY reviewer : checks that each message's advice actually fits its
+#                         "when" condition, and that the npk_estimate bands are
+#                         sensible for local lowland rice.
+#
+# HOW TO READ ONE ENTRY - each advice message has six lines:
+#   icon        : which pictogram shows. Chosen separately - do NOT edit.
+#   headline_id : (a) the Bahasa Indonesia headline the farmer sees. REVIEW.
+#   body_id     : (a) the Bahasa Indonesia sentence underneath it.   REVIEW.
+#   subtitle_en : (b) the English meaning, for reference only. It tells you
+#                     what the message is meant to say, so you can judge the
+#                     Bahasa. It is not shown to farmers by default.
+#   when        : (c) the exact condition that makes this message appear.
+#   draft: true : not yet reviewed. Delete this one line once the entry is done.
+#
+# The "when" line is DOCUMENTATION ONLY - the app never reads it. The real
+# triggering logic lives in data/rules/default.yaml. The salinity class and the
+# water-table depth quoted below are DERIVED from the probe's bulk conductivity
+# and moisture through data/calibration/default.yaml (marked provisional), so
+# the numbers in the "when" lines are illustrative breakpoints, open for review.
+# Note that bulk conductivity is not the same physical quantity as the
+# saturated-paste-extract conductivity used in the published salinity
+# thresholds. Both the wording and these breakpoints are open for review.
+#
+# RULES (see docs/reviewing-the-copy.md for detail):
+#   - Keep it ASCII: straight quotes, plain hyphens, no curly quotes, no symbols.
+#     A word processor such as Word can turn " into a curly quote and break the
+#     file. Use a plain-text editor or the GitHub web editor.
+#   - Keep the YAML valid: 2-space indentation, values in straight double quotes.
+#   - Do NOT rename the key at the top of an entry (for example salinity_moderate)
+#     - the app looks entries up by that key. Do NOT change the icon line.
+#   - HARD RULE: never put the pooled 64.5 per cent salinity yield-loss figure
+#     (docs/references.md, source 1) into farmer-facing text. It is a pooled
+#     experimental mean, not a typical field loss.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SALINITY - the highest-priority alert, escalated at panicle initiation and
+# flowering (references.md, source 1). The salinity class is derived from the
+# probe's bulk conductivity.
+# -----------------------------------------------------------------------------
 
 salinity_none:
   icon: salinity
   headline_id: "Salinitas tanah rendah"
   body_id: "Kondisi salinitas belum menjadi risiko saat ini."
   subtitle_en: "Salinity is low, not currently a risk"
-  when: "Conductivity at or below 1000 uS/cm (non-saline class)."
+  when: "Conductivity at or below 1000 uS/cm (non-saline class), at any growth stage."
   draft: true
 
 salinity_mild:
@@ -58,6 +89,12 @@ salinity_severe:
   when: "Conductivity above 4000 uS/cm (severely saline), at any growth stage."
   draft: true
 
+# -----------------------------------------------------------------------------
+# WATER - Safe Alternate Wetting and Drying (AWD), suspended around flowering
+# (references.md, source 3). The water-table depth is derived from the probe's
+# moisture reading. The flowering rule overrides the depth-based rules.
+# -----------------------------------------------------------------------------
+
 water_flowering_suspended:
   icon: water
   headline_id: "Jaga sawah tetap tergenang"
@@ -71,7 +108,7 @@ water_reflood_now:
   headline_id: "Saatnya mengairi kembali"
   body_id: "Muka air di bawah permukaan sudah turun sekitar 15 cm, alirkan air hingga sekitar 5 cm di atas permukaan."
   subtitle_en: "The perched water table has dropped to about 15 cm below the surface, re-flood to about 5 cm"
-  when: "Estimated water table 15 cm or more below the surface (moisture at or below about 25 per cent), and not during the panicle initiation or flowering stages."
+  when: "Estimated water table 15 cm or more below the surface (moisture at or below about 25 per cent), and NOT during the panicle initiation or flowering stages."
   draft: true
 
 water_within_range:
@@ -79,8 +116,13 @@ water_within_range:
   headline_id: "Pengeringan berkala berjalan aman"
   body_id: "Muka air masih dalam rentang aman, belum perlu mengairi kembali."
   subtitle_en: "The water table is still within the safe alternate wetting and drying range, no need to re-flood yet"
-  when: "Estimated water table less than 15 cm below the surface (moisture above about 25 per cent), and not during the panicle initiation or flowering stages."
+  when: "Estimated water table less than 15 cm below the surface (moisture above about 25 per cent), and NOT during the panicle initiation or flowering stages."
   draft: true
+
+# -----------------------------------------------------------------------------
+# ACIDITY - lime or dolomite, and stronger phosphorus and potassium advice,
+# below pH 5.5 (references.md, source 2).
+# -----------------------------------------------------------------------------
 
 acidity_low_ph:
   icon: acidity
@@ -97,6 +139,13 @@ acidity_ok:
   subtitle_en: "Soil pH is adequate, no lime or dolomite action needed at this reading"
   when: "Soil pH 5.5 or above."
   draft: true
+
+# -----------------------------------------------------------------------------
+# NUTRIENTS (soil-solution strength) - INFORMATION ONLY. This is derived from
+# conductivity alone and is never a fertiliser dose (references.md, sources
+# 6, 7 and 8). A real dose comes only from a PUTS soil-test kit read against
+# Permentan 13/2022. See also the npk_estimate block below.
+# -----------------------------------------------------------------------------
 
 nutrients_weak:
   icon: nutrient
@@ -121,3 +170,105 @@ nutrients_strong:
   subtitle_en: "Soil solution strength is strong, derived from conductivity alone; use a PUTS test for a fertiliser recommendation"
   when: "Conductivity above 4000 uS/cm (strong soil solution). Always shown as information only, never as a dose."
   draft: true
+
+# =============================================================================
+# NPK ESTIMATE - the "estimasi sensor" shown on each plot's detail panel
+# =============================================================================
+# The app's field map shows this NPK estimate on the detail panel for each plot.
+# For each nutrient the probe reports a number in mg/kg; the app sorts that
+# number into one of three bands (Rendah / Sedang / Cukup) and shows a light
+# suggested action beside it.
+#
+# THIS IS AN ESTIMATE, NEVER A FERTILISER DOSE. The probe derives N, P and K
+# from a single conductivity measurement (references.md, source 8), so these are
+# not independent nutrient measurements. A real fertiliser dose comes only from
+# a PUTS soil-test kit read against Permentan 13/2022 (references.md, sources 6
+# and 7). The action words below are gentle prompts ("pertimbangkan urea" =
+# consider urea, "pantau" = monitor, "cukup" = adequate), not quantities.
+#
+# IMPORTANT - MIRROR IN THE APP. These thresholds and action words ALSO live in
+# the application code at app/web/app.js (the NPK_META array and BAND_ID_LABEL).
+# The app does NOT read them from this file. So any change a reviewer makes here
+# must be passed to the developer to mirror in app.js, or the two copies drift
+# apart and the screen will disagree with this file.
+#
+# How the bands work (matches the app boundaries):
+#   - "below X"        = Rendah (low)      -> the low action
+#   - "X up to Y"      = Sedang (medium)   -> "pantau" (monitor)
+#   - "Y and above"    = Cukup (adequate)  -> "cukup" (adequate, no action)
+# The value Y itself falls in the Cukup band.
+#
+# LANGUAGE reviewer: check and improve the action_id wording (Bahasa Indonesia).
+# AGRONOMY reviewer: check the mg/kg ranges are sensible for local lowland rice.
+# Each band carries its own draft: true - delete it once that band is reviewed.
+
+npk_estimate:
+
+  nitrogen:
+    symbol: "N"
+    label_id: "Nitrogen"
+    unit: "mg/kg"
+    low:
+      range: "below 80 mg/kg"
+      band_id: "Rendah"
+      action_id: "pertimbangkan urea"
+      action_en: "consider urea (a nitrogen fertiliser)"
+      draft: true
+    medium:
+      range: "80 up to 200 mg/kg"
+      band_id: "Sedang"
+      action_id: "pantau"
+      action_en: "monitor"
+      draft: true
+    adequate:
+      range: "200 mg/kg and above"
+      band_id: "Cukup"
+      action_id: "cukup"
+      action_en: "adequate, no action needed"
+      draft: true
+
+  phosphorus:
+    symbol: "P"
+    label_id: "Fosfor"
+    unit: "mg/kg"
+    low:
+      range: "below 12 mg/kg"
+      band_id: "Rendah"
+      action_id: "pertimbangkan SP-36"
+      action_en: "consider SP-36 (a phosphorus fertiliser)"
+      draft: true
+    medium:
+      range: "12 up to 25 mg/kg"
+      band_id: "Sedang"
+      action_id: "pantau"
+      action_en: "monitor"
+      draft: true
+    adequate:
+      range: "25 mg/kg and above"
+      band_id: "Cukup"
+      action_id: "cukup"
+      action_en: "adequate, no action needed"
+      draft: true
+
+  potassium:
+    symbol: "K"
+    label_id: "Kalium"
+    unit: "mg/kg"
+    low:
+      range: "below 50 mg/kg"
+      band_id: "Rendah"
+      action_id: "pertimbangkan KCl"
+      action_en: "consider KCl / muriate of potash (a potassium fertiliser)"
+      draft: true
+    medium:
+      range: "50 up to 100 mg/kg"
+      band_id: "Sedang"
+      action_id: "pantau"
+      action_en: "monitor"
+      draft: true
+    adequate:
+      range: "100 mg/kg and above"
+      band_id: "Cukup"
+      action_id: "cukup"
+      action_en: "adequate, no action needed"
+      draft: true

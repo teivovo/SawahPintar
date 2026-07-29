@@ -51,6 +51,9 @@ const READING_META = [
   { key: "conductivity", label: "Kekuatan larutan", unit: "uS/cm" },
   { key: "temperature", label: "Suhu tanah", unit: "C" },
 ];
+// The NPK estimate bands and Indonesian action wording. These MIRROR the
+// reviewable npk_estimate block in data/content/advice.yaml, which the
+// agronomy team validates: any change agreed there must be mirrored here.
 const NPK_META = [
   { key: "nitrogen_raw", symbol: "N", label: "Nitrogen", low: 80, high: 200, actLow: "pertimbangkan urea" },
   { key: "phosphorus_raw", symbol: "P", label: "Fosfor", low: 12, high: 25, actLow: "pertimbangkan SP-36" },

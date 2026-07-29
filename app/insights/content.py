@@ -39,10 +39,18 @@ class ContentPack:
         except KeyError:
             raise KeyError(f"content pack has no entry for key: {key}") from None
 
+    # Top-level keys in advice.yaml that are NOT advice entries: review-only
+    # documentation the engine does not consume. `npk_estimate` holds the NPK
+    # band thresholds and Indonesian action wording that the agronomy team
+    # validates; it mirrors app/web/app.js and is never read at runtime.
+    RESERVED_KEYS = frozenset({"npk_estimate"})
+
     @classmethod
     def from_dict(cls, data: dict) -> "ContentPack":
         entries: dict[str, ContentEntry] = {}
         for key, entry in data.items():
+            if key in cls.RESERVED_KEYS:
+                continue
             for required in ("icon", "headline_id", "body_id", "subtitle_en", "draft"):
                 if required not in entry:
                     raise ValueError(f"content entry '{key}' is missing required field: {required}")

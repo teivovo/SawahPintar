@@ -208,11 +208,11 @@ Open Windows Device Manager and look under "Ports (COM & LPT)" while the
 dongle is plugged in. The dongle will appear as something like "USB-SERIAL
 CH340 (COM9)". The number after COM is the port you need.
 
-The operator console also lists available ports directly. Open it either
-by clicking the small gear icon in the bottom-left corner of the farmer
-display, or with the Ctrl+Alt+O keyboard shortcut. The "Sensor dan port"
-panel then shows a dropdown of every port Windows currently sees, so you
-rarely need Device Manager at all once the application is running.
+The COM port is set inside the application itself, not in a separate
+console. When a plot is set to Langsung (live), a Port box appears for it,
+either in the plot detail's "Pengaturan petak" panel (section 4.2) or in
+the zone editor (section 4.2a), where you enter the port number Device
+Manager reported above.
 
 ### 3.4 What to do when the port is wrong
 
@@ -221,10 +221,10 @@ port, or if you move the dongle to a different USB socket and Windows
 assigns it a new number, the sensor will not respond. Two ways to fix
 this:
 
-- In the operator console, use the "Sensor dan port" panel to pick the
-  correct port from the dropdown, select the profile and mode, and press
-  "Terapkan". This updates the running session and saves the change to
-  `config.json` for next time.
+- Set the plot to Langsung (live) and enter the correct port in its Port
+  box, either in the plot detail's "Pengaturan petak" panel (section 4.2)
+  or in the zone editor (section 4.2a). The change saves automatically to
+  `config.json`, so it holds for next time.
 - Or edit `config.json` directly: change the `port` value under
   `sensors.probe-a` to the correct COM port, then restart the
   application.
@@ -259,12 +259,11 @@ Double-click `Start Workshop.bat` inside the kit folder. This script:
    the window onto a half-ready screen.
 
 The launcher always starts in simulation mode. That is the safe default
-for the demonstration: the seeded history and the "SIMULASI" watermark
-are exactly what the walkthrough uses, and the facilitator switches a
-sensor to live during the session when a real probe is connected, as
-described in section 4.3. It also means a live binding left in the
-configuration from a previous session can never leave a kit stuck on a
-dead feed at startup.
+for the demonstration: the seeded history is exactly what the walkthrough
+uses, and the facilitator switches a plot to live during the session when
+a real probe is connected, as described in section 4.2. It also means a
+live binding left in the configuration from a previous session can never
+leave a kit stuck on a dead feed at startup.
 
 If the window opens to a blank or error page on a slow laptop, wait a few
 seconds and reload; the server may still have been finishing its first-run
@@ -272,78 +271,132 @@ setup.
 
 ### 4.2 The farmer display
 
-This is the window that opens automatically and is the only thing
-farmers should see. It is designed to be read by a standing group in
-daylight: large type, high contrast, a light palette. It takes one of two
-forms, chosen automatically by whether the field has been laid out as
-plots (section 4.2a).
+This is the window that opens automatically and is the only thing farmers
+should see. It is designed to be read by a standing group in daylight:
+large type, high contrast, a light palette. When the field has been laid
+out as plots (section 4.2a), it takes the form of a field map, sized to
+fit one screen with no page scrolling. There is no "SIMULASI" watermark
+any more; whether a plot is simulated or live is shown inside that plot's
+own detail, not stamped across the whole screen.
 
-**Field map (when plots are configured).** The field is drawn as a map: an
-aerial photo of the plot with each sensor's area outlined and tinted by its
-alert colour - green for satisfactory, amber for attention, red for act now,
-and a dashed grey for a plot that has no sensor. It fits one screen with no
-scrolling: the map on the left, and on the right the detail for whichever
-plot you tap. That detail shows the plot's overall status, a data-source
-switch (Simulasi / Langsung / Lepas), the four soil readings, the Perkiraan
-NPK estimate (section 7.2), and up to four advice cards ranked by severity
-then topic. Plots recolour live as their readings change.
+![The farmer display: the field map on the left, the selected plot's detail on the right.](screenshots/field-map.png)
 
-**Single or split panel (no plots configured).** With a single bare probe and
-no plots drawn, the display is the original panel: an overall status
-indicator, up to four advice cards, dials for moisture, pH, conductivity and
-temperature, and a trends panel collapsed by default. With exactly two probes
-it splits into a side-by-side comparison, a flooded paddy beside a dry bund
-or a fertilised plot beside an untreated one, which is the strongest single
-teaching device the kit offers.
+*The farmer display. The aerial field photo and its plots sit on the left; the selected plot's detail is on the right.*
 
-The SIMULASI watermark appears whenever any active reading is simulated, and
-no farmer-facing control can hide it.
+**The map.** The field photo carries one outlined plot per sensor, each
+tinted by its alert colour: green for Baik (satisfactory), amber for Perlu
+perhatian (needs attention), red for Bertindak (act now), and a dashed grey
+outline for "Belum ada sensor", a plot that has been drawn but has no sensor
+attached. A colour legend sits at the top-right of the map. Below the map is
+a summary bar: a headline such as "1 petak perlu tindakan" (one plot needs
+action) and counts across the four states, Baik, Perhatian, Tindakan and
+Kosong (empty). The plots recolour live as the readings change.
+
+**A plot's detail.** Tapping a plot opens its detail on the right. From top
+to bottom it holds:
+
+- The plot name in an editable text box, a green "Simpan" (save) button
+  beside it, and a status pill.
+- A collapsible "Pengaturan petak" (plot setup) panel, closed by default so
+  it stays out of the farmers' way. Opening it reveals two controls: "Sumber
+  data" (data source), three buttons Simulasi / Langsung / Lepas (simulation,
+  live probe, detached) with a Port box shown when the plot is live; and
+  "Tahap pertumbuhan" (growth stage), a per-plot dropdown.
+- "Bacaan tanah" (soil readings): the four probe readings, Kelembapan
+  (moisture, per cent), pH tanah (soil pH), Kekuatan larutan (solution
+  strength, conductivity in uS/cm) and Suhu tanah (soil temperature, C).
+- "Perkiraan NPK" (NPK estimate), carrying an "estimasi sensor" tag: three
+  rows, N, P and K, each with a value in mg/kg, a band tag (Rendah, Sedang or
+  Cukup) and a light suggested action such as pantau, cukup or pertimbangkan
+  urea. This is a sensor estimate, never a dose; section 7.2 explains the
+  honesty position behind it.
+- "Saran" (advice): up to four advice cards, ranked by severity then topic.
+
+![A plot's detail with the "Pengaturan petak" panel expanded.](screenshots/plot-detail.png)
+
+*A plot's detail with "Pengaturan petak" opened, showing the data-source buttons and the growth-stage dropdown.*
+
+**Editing is immediate, and it sticks.** Renaming a plot, type into the box
+then click Simpan or press Enter, updates the plot's label on the map at
+once and saves it to `config.json`. Changing the data source or the growth
+stage saves on its own, with a small "Tersimpan" (saved) cue. So the
+operator's setup survives the next launch rather than having to be redone.
+
+**When a probe goes quiet.** If a live plot's probe stops answering, a
+"Sensor tidak merespons" (sensor not responding) banner appears, but only
+after about 45 seconds of continuous silence. It no longer flashes on a
+single slow read, so an occasional slow poll does not alarm the room.
+
+**Fallback: a single bare probe.** If no plots have been drawn, one probe
+and no zones, the farmer display shows the original panel view instead: an
+overall status indicator, up to four advice cards, dials for moisture, pH,
+conductivity and temperature, and a trends panel collapsed by default. Draw
+even one plot (section 4.2a) and the display switches to the field map.
 
 ### 4.2a Laying out the field (the zone editor)
 
-To use the field map, draw one plot per sensor once for the site. Open the
-operator console (section 4.3), click **Editor petak sawah**, and you get the
-field photo with a draggable outline for each sensor. Drag a corner handle to
-fit a plot to a field, drag a midpoint dot to add a corner, double-click a
-corner to remove it, and drag a plot's interior to move it whole. Set each
-plot's name, source (simulation, live probe, or detached) and port; add or
-remove plots; then Save. The layout is stored in `config.json`, and the
-farmer map shows it immediately. The bundled photo is a stand-in: a real site
-can replace `app/web/assets/field-default.jpg` with a drone or satellite image
-of the actual field and re-trace the plots against it.
+The field map is built once per site in the zone editor. Open it from the
+gear icon in the top-left corner of the farmer display, or go straight to
+`/zone-editor.html`. You draw one plot per sensor over the field photo.
+
+Shaping a plot uses direct handles on the photo:
+
+- Drag a corner handle to move that corner.
+- Drag a small mid-edge dot to add a new corner there.
+- Double-click a corner to remove it.
+- Drag a plot's interior to move the whole plot at once.
+
+For each plot, set its Nama (name), its Sumber (Simulasi, Langsung or Lepas)
+and, when live, its Port. Add a plot with "+ Tambah petak" and remove one
+with the small x on it. When the layout looks right, press "Simpan tata
+letak" (save layout); the farmer map then shows it immediately. The editor
+also links across to the farmer view and to the operator console, shown as
+"Konsol operator (PUTS, ekspor)".
+
+![The zone editor: plots drawn over the field photo, each with its name, source and port.](screenshots/zone-editor.png)
+
+*The zone editor. Each sensor gets one plot traced over the field photo, with its name, source and port set alongside.*
+
+The bundled photo is a stand-in. A real site replaces
+`app/web/assets/field-default.jpg` with a drone or satellite image of the
+actual field and re-traces the plots against it.
 
 ### 4.3 The operator console
 
-Open the operator console from the farmer display in one of two ways: click
-the small gear icon in the bottom-left corner, or press Ctrl+Alt+O. The gear
-is deliberately faint so it stays out of the farmers' way, and brightens when
-you point at it. The console opens in a separate view that farmers never see;
-it is dense and capable, built for the facilitator. From here you can:
+The operator console is no longer the main settings screen. The controls a
+facilitator reaches for most, a plot's data source, its name and its growth
+stage, now live on the farmer display itself: in the plot detail (section
+4.2) and in the zone editor (section 4.2a). The console holds what did not
+move there.
 
-- Bind a sensor to a port, profile and mode (live, simulate or detached).
-- Open the field zone editor to lay out plots on the field photo (section
-  4.2a).
+Open it from the plot editor, using its "Konsol operator (PUTS, ekspor)"
+link, or press Ctrl+Alt+O from anywhere. It opens in a separate view that
+farmers never see; it is dense and built for the facilitator. From here you
+can:
+
 - Use the register inspector to read arbitrary Modbus registers directly,
   useful for confirming a new sensor's layout in the field (see section
   5.3).
-- Set the growth stage and site name, and toggle the interface language
-  between Bahasa Indonesia and English.
-- Fill in the field card: field size, variety, seedling age, water
-  source, previous yield and available fertiliser.
+- Set the site name, and toggle the interface language between Bahasa
+  Indonesia and English.
+- Fill in the field card: field size, variety, seedling age, water source,
+  previous yield and available fertiliser.
 - Record a PUTS result (nitrogen, phosphorus and potassium status class,
-  plus pH).
-- In simulate mode, trigger the "insert probe" and "withdraw probe"
-  scenario buttons to rehearse the insertion moment before farmers arrive.
+  plus pH). This is the only path to a numeric fertiliser dose; see section
+  7.
+- In simulate mode, trigger the "insert probe" and "withdraw probe" scenario
+  buttons to rehearse the insertion moment before farmers arrive.
 - Reset the demo, which clears live readings and the field card so a new
   focus group starts clean without touching the seeded history.
 - Export the session.
 
 ### 4.4 Growth stage
 
-Growth stage is a single dropdown in the operator console: land
-preparation, transplanting, tillering, panicle initiation, flowering, or
-ripening. Set it once at the start of a session and change it if the
-group discussion moves to a different point in the season. It matters
+Growth stage is a per-plot dropdown, set in each plot's "Pengaturan petak"
+panel on the farmer display (section 4.2): land preparation, transplanting,
+tillering, panicle initiation, flowering, or ripening. Set it for a plot at
+the start of a session and change it if the group discussion moves to a
+different point in the season. It matters
 because two rule groups read it directly: salinity severity is
 escalated during panicle initiation and flowering, and water advice is
 suspended and replaced with a "keep the field flooded" message during
@@ -473,14 +526,14 @@ mapping in the field.
 | The app opened in an ordinary browser with tabs, not a clean full-screen window | No Microsoft Edge was found, so the launcher fell back to the default browser | The kit still works this way; to get the clean window, install Microsoft Edge and run again |
 | Every dependency import fails on a freshly built kit | `python312._pth` still has `import site` commented out | Open that file inside `python/`, confirm it reads `import site` with no leading `#`, rebuild if not |
 | The suite passed on the build machine but the kit still fails imports at the workshop | The kit was certified against a developer machine's Python, not the actual embeddable runtime | Rebuild from scratch and re-run the suite against the real 3.12.8 runtime before shipping again |
-| Sensor shows no reading, or a reconnect banner appears | Wrong COM port, or the dongle driver is not installed | Check Device Manager or the operator console's port list; reinstall the CH340 or FTDI driver if the dongle is unrecognised |
+| Sensor shows no reading, or a reconnect banner appears | Wrong COM port, or the dongle driver is not installed | Check Device Manager or the plot's Port box in "Pengaturan petak" (section 4.2); reinstall the CH340 or FTDI driver if the dongle is unrecognised |
 | Sensor reads garbled or implausible values | RS485 A and B wires reversed | Check wiring against section 3.1; yellow is A, blue is B |
 | Application opens but the browser window has address bars and tabs | Edge opened normally rather than in application mode, usually because the script could not find it and something else launched instead | Confirm Edge is at one of the two standard paths; close the window and re-run `Start Workshop.bat` |
 | Farmer display never updates from zero after the probe goes in | Probe not fully seated in moist soil, or in simulate mode with no scenario triggered | Reseat the probe; if running a rehearsal, use the operator console's "Masukkan probe" scenario button |
 | A new focus group sees the previous group's readings | Demo was not reset between groups | Press "Atur ulang demo" in the operator console before the next group starts, after exporting the previous group's data |
 | Exported files are missing after a session | Export was not run before "Atur ulang demo" was pressed | Always export before resetting; reset clears live readings and cannot be undone |
-| A "SIMULASI" watermark is showing | The kit is in simulation mode | This is normal and expected: the kit always starts in simulation. To use a real probe, switch the sensor to live in the operator console's "Sensor dan port" panel, set the correct port and press "Terapkan" |
-| The display shows "Sensor tidak merespons" (sensor not responding) after switching to live | Live mode was selected but the probe cannot be read: not connected, wrong port, or the port is held by another program | Check the probe is plugged in and the port is right, then re-apply; or switch back to simulation in the operator console, which recovers immediately. The feed stays alive throughout, so no restart is needed |
+| The kit is showing simulated readings, not the real probe | The kit always starts in simulation, which is the safe default | Open the plot, expand "Pengaturan petak" and set its Sumber to Langsung (live), then enter the port (section 4.2). To rehearse without a probe, leave the plot on Simulasi |
+| The display shows "Sensor tidak merespons" (sensor not responding) on a live plot | The probe cannot be read: not connected, wrong port, or the port is held by another program. The banner waits about 45 seconds of continuous silence before it appears | Check the probe is plugged in and the port is right in "Pengaturan petak" (section 4.2); or set the plot's Sumber back to Simulasi, which recovers immediately. The feed stays alive throughout, so no restart is needed |
 | The display is stuck on "Sambungan terputus" (reconnecting) and never shows live data, even in simulation | The bundled runtime is missing its WebSocket library, so the live feed cannot connect | Rebuild the kit; the build script installs websockets. The server window will also show "No supported WebSocket library detected". See section 2.3, step 4 |
 
 ## 7. The honesty position
