@@ -374,7 +374,7 @@
     <h1>SawahPintar</h1>
     <p class="subtitle">A soil sensor teaching tool for rice farming field workshops in South Sulawesi.
     One laptop, one probe, one focus group at a time.</p>
-    <p class="footer-note">Project team briefing, 23 July 2026. Use the arrow keys to move through this deck.</p>
+    <p class="footer-note">Project team briefing, 30 July 2026. Use the arrow keys to move through this deck.</p>
   </section>
 
   <!-- Slide 2: What it is and who it is for -->
@@ -435,27 +435,31 @@
     </div>
   </section>
 
-  <!-- Slide 5: The farmer screen -->
-  <section class="slide" data-title="The farmer screen">
+  <!-- Slide 5: The field map -->
+  <section class="slide" data-title="The field map">
     <p class="kicker">The farmer screen</p>
-    <h2>Large type, high contrast, read standing in daylight</h2>
+    <h2>The field, drawn as a map of plots</h2>
     <div class="shot-wrap">
-      <img class="shot" src="../screenshots/02-farmer-display-full.png" alt="Farmer-facing display showing overall status, four advice cards and four measurement dials">
+      <img class="shot" src="../screenshots/field-map.png" alt="Field map with one outlined plot per sensor, each tinted by its alert, a colour legend top-right and a summary bar of counts below">
     </div>
-    <p class="shot-caption">An overall status indicator, up to four advice cards, and dials for moisture, pH,
-    conductivity and temperature. Green means satisfactory, amber means attention needed, red means act now.</p>
+    <p class="shot-caption">One outlined plot per sensor, laid over the field and tinted by its alert:
+    green Baik (satisfactory), amber Perlu perhatian (attention), red Bertindak (act now), and dashed grey
+    Belum ada sensor for a plot with no sensor attached. A colour legend sits top-right; a summary bar below
+    counts the plots (Baik / Perhatian / Tindakan / Kosong). It fits one screen with no scrolling, and there is
+    no longer a SIMULASI watermark. Tapping a plot opens its detail on the right.</p>
   </section>
 
-  <!-- Slide 6: Trends -->
-  <section class="slide" data-title="Trends">
-    <p class="kicker">Trends, opened when it matters</p>
-    <h2>Every chart is alive the moment the laptop starts</h2>
+  <!-- Slide 6: The plot detail -->
+  <section class="slide" data-title="The plot detail">
+    <p class="kicker">Tapping a plot</p>
+    <h2>The plot detail</h2>
     <div class="shot-wrap">
-      <img class="shot" src="../screenshots/03-trends-expanded.png" alt="Trends panel expanded, showing history for the current session">
+      <img class="shot" src="../screenshots/plot-detail.png" alt="Plot detail panel: editable plot name with Simpan, an expanded Pengaturan petak panel, four soil readings, a Perkiraan NPK estimate and advice cards">
     </div>
-    <p class="shot-caption">Collapsed by default so the first thing a farmer sees is the current reading, not a
-    chart. About 90 days of seeded wet-season history is generated on first run and shown in a muted style,
-    so no one mistakes seeded rows for measured ones.</p>
+    <p class="shot-caption">An editable plot name with a Simpan button, and a collapsible Pengaturan petak panel:
+    data source (Simulasi / Langsung / Lepas), a Port box when it is live, and a per-plot Tahap pertumbuhan
+    growth-stage dropdown. Below sit the four soil readings (Kelembapan, pH tanah, Kekuatan larutan, Suhu tanah),
+    a Perkiraan NPK estimate, and the advice cards.</p>
   </section>
 
   <!-- Slide 7: Four advice groups -->
@@ -467,51 +471,68 @@
       <tr><td>Salinity</td><td>Escalates one severity level during panicle initiation and flowering</td><td>Highest</td></tr>
       <tr><td>Water (AWD)</td><td>Re-flood at about 15 cm water-table drawdown; suspended around flowering</td><td>Second</td></tr>
       <tr><td>Acidity</td><td>Below pH 5.5, recommend lime or dolomite</td><td>Third</td></tr>
-      <tr><td>Nutrients</td><td>One derived indicator only, never a probe-based dose</td><td>Fourth</td></tr>
+      <tr><td>Nutrients</td><td>An NPK estimate ("estimasi sensor") in coarse bands, shown alongside the
+      conductivity-derived soil-solution-strength indicator; a fertiliser dose still comes only from a PUTS test,
+      never the probe</td><td>Fourth</td></tr>
     </table>
     <p>Salinity sits above the other three because a saline event does the most damage the fastest, and rice is
     at its most sensitive to salt in the same window that acidity and nutrient advice change least. The nutrient
-    group is deliberately the most restrained of the four; slide 11 explains why.</p>
+    group now surfaces an NPK estimate in coarse bands, clearly labelled as a sensor estimate rather than a dose;
+    slide 11 explains the honesty position behind that choice.</p>
   </section>
 
-  <!-- Slide 8: Probe moment - before -->
-  <section class="slide" data-title="Before insertion">
-    <p class="kicker">The probe moment, part one</p>
-    <h2>Before: the probe is in air</h2>
+  <!-- Slide 8: Setting up the field - the zone editor -->
+  <section class="slide" data-title="Zone editor">
+    <p class="kicker">Setting up the field</p>
+    <h2>The zone editor</h2>
     <div class="shot-wrap">
-      <img class="shot" src="../screenshots/07-before-insertion.png" alt="Farmer display before probe insertion: red act now banner, moisture 0 per cent, conductivity 0">
+      <img class="shot" src="../screenshots/zone-editor.png" alt="Zone editor: a field photo with one outlined plot per sensor being drawn, and a side panel for plot name, source and port">
     </div>
-    <p class="shot-caption">
-      <span class="badge badge-red">Bertindak sekarang</span>
-      Moisture 0 per cent, conductivity 0. The probe reads nothing because it is touching nothing.
-    </p>
+    <p class="shot-caption">Open it from the top-left gear (or /zone-editor.html) and draw one plot per sensor over
+    the field photo: drag a corner to move it, drag a mid-edge dot to add a corner, double-click a corner to remove
+    it, drag the interior to move the whole plot. Set each plot's name, source and port, then Save persists the
+    layout so the next launch opens straight on the map. The bundled photo is a stand-in; a real site swaps in a
+    drone or satellite image and re-traces.</p>
   </section>
 
-  <!-- Slide 9: Probe moment - after -->
-  <section class="slide" data-title="After insertion">
-    <p class="kicker">The probe moment, part two</p>
-    <h2>After: the screen reacts to a farmer's own hands</h2>
-    <div class="shot-wrap">
-      <img class="shot" src="../screenshots/09-after-insertion.png" alt="Farmer display after probe insertion: amber attention needed banner, moisture 43.2 per cent, conductivity 799">
+  <!-- Slide 9: The probe moment -->
+  <section class="slide" data-title="The probe moment">
+    <p class="kicker">The hands-on moment</p>
+    <h2>The probe moment</h2>
+    <div class="row">
+      <div class="col">
+        <p>The moment the whole workshop is built around still exists. One plot is set to
+        <strong>Langsung</strong> (live) on its COM port, the farmer pushes the probe into the soil, and that plot
+        reacts live on the map.</p>
+        <p>Its colour shifts and its readings update as the probe seats in wet soil -
+        <span class="badge badge-red">Bertindak</span> to <span class="badge badge-amber">Perhatian</span> in the
+        seconds after a farmer's own hands go to work. A standing group watches one square on the field change, in
+        real time, from something they did.</p>
+      </div>
+      <div class="col">
+        <div class="quote-box">A number on a screen is abstract. The same number, changing because you just pushed a
+        probe into your own paddy, is not.</div>
+      </div>
     </div>
-    <p class="shot-caption">
-      <span class="badge badge-amber">Perlu perhatian</span>
-      Moisture 43.2 per cent, conductivity 799 uS/cm, pH 5.4, temperature 28.6 C. A step-change detector
-      catches the jump the instant the probe seats in wet soil, plays a short reading animation, then reveals
-      this assessment. This is the moment the whole workshop is built around.
-    </p>
   </section>
 
-  <!-- Slide 10: Operator console -->
+  <!-- Slide 10: Two setup surfaces -->
   <section class="slide" data-title="Operator console">
-    <p class="kicker">The operator console</p>
-    <h2>Dense and capable, never shown to farmers</h2>
-    <div class="shot-wrap">
-      <img class="shot" src="../screenshots/05-operator-console-full.png" alt="Operator console showing sensor binding, register inspector, growth stage, field card, PUTS entry and export controls">
+    <p class="kicker">Behind the map</p>
+    <h2>Two setup surfaces, neither shown to farmers</h2>
+    <div class="row">
+      <div class="col">
+        <h3 style="margin-top:0;">The plot editor</h3>
+        <p>The top-left gear now opens the <strong>plot editor</strong>, the main setup surface. This is where the
+        field is drawn, one plot per sensor, and where each plot's name, source and port are set (slide 8).</p>
+      </div>
+      <div class="col">
+        <h3 style="margin-top:0;">The operator console</h3>
+        <p>Reached from the plot editor's header link, or with <strong>Ctrl+Alt+O</strong>. It still holds the
+        register inspector for unfamiliar sensors, the site name, the language toggle, the field card, PUTS class
+        entry (the only path to a fertiliser dose), scenario rehearsal buttons, demo reset and data export.</p>
+      </div>
     </div>
-    <p class="shot-caption">Reached with Ctrl+Alt+O. Port and profile binding, a register inspector for
-    unfamiliar sensors, growth stage and language, the field card, PUTS class entry, scenario rehearsal
-    buttons, demo reset and export to Parquet and CSV.</p>
   </section>
 
   <!-- Slide 11: Honesty position on nutrients -->
@@ -538,9 +559,10 @@
         simultaneously. They move together because they are one number.</div>
       </div>
     </div>
-    <p style="margin-top:0.8rem;"><strong>So the application shows one derived indicator, soil solution
-    strength, and never a fertiliser dose from the probe.</strong> Doses come only from operator-entered
-    PUTS status classes, via Permentan No. 13 of 2022.</p>
+    <p style="margin-top:0.8rem;"><strong>So the NPK values on each plot's detail are shown as an "estimasi
+    sensor" - a deliberate choice for the demo, presented plainly as an estimate, never as a measurement or a
+    dose.</strong> The conductivity-derived soil-solution-strength indicator remains alongside them, and a
+    fertiliser dose still comes only from operator-entered PUTS status classes, via Permentan No. 13 of 2022.</p>
   </section>
 
   <!-- Slide 12: Evidence base -->
@@ -599,7 +621,10 @@
       <li><strong>pytz is required and non-obvious:</strong> duckdb needs it to read TIMESTAMPTZ columns
       but does not declare it. Omitting it fails only on a clean machine, which is every workshop laptop.
       Running the suite against the real runtime broke 11 tests before this was caught.</li>
-      <li>Six pure-wheel dependencies in total: duckdb, pyserial, fastapi, uvicorn, pyyaml, pytz.</li>
+      <li><strong>websockets is required and easy to miss:</strong> uvicorn needs it to upgrade the live /ws feed
+      that pushes readings to the map. Without it the socket never opens and the live map never updates, even
+      though the app starts cleanly.</li>
+      <li>Seven pure-wheel dependencies in total: duckdb, pyserial, fastapi, uvicorn, websockets, pyyaml, pytz.</li>
       <li>Assembled runtime with dependencies: about 92 MB on disk.</li>
       <li><strong>Certification rule:</strong> always build the runtime from scratch and run the full test
       suite against it. Never certify a kit from a developer machine.</li>
