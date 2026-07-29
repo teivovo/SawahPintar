@@ -23,13 +23,11 @@ def make_client():
     return TestClient(create_app(state)), state
 
 
-def test_index_page_serves_and_contains_the_watermark_element():
+def test_index_page_serves_as_html():
     client, state = make_client()
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert 'id="watermark"' in response.text
-    assert "SIMULASI" in response.text
     state.con.close()
 
 
@@ -53,17 +51,15 @@ def test_farmer_display_never_renders_raw_nutrient_registers():
         assert forbidden not in content
 
 
-def test_watermark_has_no_farmer_reachable_control_to_hide_it():
-    content = (WEB_DIR / "app.js").read_text(encoding="utf-8")
-    assert 'getElementById("watermark").addEventListener' not in content
-    assert "watermark.onclick" not in content
-    assert "watermark.hidden = true" not in content
-
-
-def test_watermark_visibility_is_driven_only_by_simulated_sensors():
-    content = (WEB_DIR / "app.js").read_text(encoding="utf-8")
-    assert "simulatedSensors" in content
-    assert "updateWatermark" in content
+def test_simulation_watermark_is_removed():
+    """The SIMULASI ribbon was removed at the operator's request; guard against
+    it creeping back."""
+    index_html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    assert 'id="watermark"' not in index_html
+    assert "SIMULASI" not in index_html
+    app_js = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    assert "updateWatermark" not in app_js
+    assert "simulatedSensors" not in app_js
 
 
 def test_advice_cards_rank_by_severity_then_rule_group_priority():

@@ -10,7 +10,6 @@ const SEVERITY_LABEL = {
 const RULE_GROUP_PRIORITY = { salinity: 4, water: 3, acidity: 2, nutrients: 1 };
 
 const panels = {};
-const simulatedSensors = new Set();
 
 // --- Field map (Peta lahan) ---------------------------------------------
 // A plot's alert colour is laid over the aerial photo at partial opacity so
@@ -58,6 +57,14 @@ const NPK_META = [
   { key: "potassium_raw", symbol: "K", label: "Kalium", low: 50, high: 100, actLow: "pertimbangkan KCl" },
 ];
 const BAND_ID_LABEL = { low: "Rendah", mid: "Sedang", ok: "Cukup" };
+const GROWTH_STAGES_ID = [
+  ["land_preparation", "Persiapan lahan"],
+  ["transplanting", "Tanam pindah"],
+  ["tillering", "Pembentukan anakan"],
+  ["panicle_initiation", "Inisiasi malai"],
+  ["flowering", "Berbunga"],
+  ["ripening", "Pematangan"],
+];
 
 function svgWrap(inner) {
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${inner}</svg>`;
@@ -67,6 +74,11 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"]/g, (character) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character])
   );
+}
+
+function escapeAttr(value) {
+  // escapeHtml already escapes the double quote, so it is safe in attributes.
+  return escapeHtml(value);
 }
 
 function npkBand(value, meta) {
@@ -192,29 +204,32 @@ function selectPlot(sensorId) {
   renderDetail(sensorId);
 }
 
-// Full per-plot detail for the map's side column, sized to fit one screen:
-// heading + status, the data-source switch (simulation / live / detached),
-// the four soil readings, an NPK estimate, and the advice cards.
+// The plot detail is built in two parts so a live tick never disturbs the
+// operator mid-edit. renderDetail lays out the interactive shell once when a
+// plot is opened - the editable name and the collapsible setup (data source
+// + growth stage); refreshDetailDynamic updates only the status pill and the
+// readings/NPK/advice, and is what runs on every websocket tick.
 function renderDetail(sensorId) {
   const body = document.getElementById("detail-body");
   const data = sensorData[sensorId];
   const plot = plots[sensorId] || {};
   if (!body || !data) return;
-  const advice = data.advice || [];
-  const values = data.reading ? data.reading.values : null;
   const mode = plot.mode || data.mode || "simulate";
-  const detached = mode === "off";
-  const severity = overallSeverity(advice);
-  const pillClass = detached ? "idle" : `severity-${severity}`;
-  const pillLabel = detached ? "Belum terpasang" : SEVERITY_LABEL[severity];
+  const stage = plot.growth_stage || data.growth_stage || "tillering";
 
   let html =
-    `<div class="d-head"><div><div class="d-name">${escapeHtml(plot.name || sensorId)}</div>` +
+    `<div class="d-head"><div class="d-head-main">` +
+    `<div class="d-name-row">` +
+    `<input class="d-name-input" value="${escapeAttr(plot.name || sensorId)}" aria-label="Nama petak">` +
+    `<button type="button" class="d-name-save" title="Simpan nama petak">Simpan</button></div>` +
     `<div class="d-sub">Sensor ${escapeHtml(sensorId)}</div></div>` +
-    `<span class="d-pill ${pillClass}">${pillLabel}</span></div>`;
+    `<span class="d-pill" id="detail-pill"></span></div>`;
 
-  // Data source switch: simulation / live probe / detached.
-  html += `<div class="detail-section-label">Sumber data / Data source</div><div class="mode-buttons">`;
+  // Collapsible, low-key plot setup: data source and growth stage. Closed by
+  // default so it stays out of the farmers' way; the operator opens it.
+  html +=
+    `<details class="plot-setup"><summary>Pengaturan petak<span class="setup-hint">sumber & tahap</span></summary>` +
+    `<div class="setup-body"><div class="setup-label">Sumber data</div><div class="mode-buttons">`;
   [
     ["simulate", "Simulasi", "demo"],
     ["live", "Langsung", "probe asli"],
@@ -228,18 +243,60 @@ function renderDetail(sensorId) {
   if (mode === "live") {
     html +=
       `<div class="port-row"><span>Port</span>` +
-      `<input type="text" id="detail-port" value="${escapeHtml(plot.port || "COM9")}"></div>`;
+      `<input type="text" id="detail-port" value="${escapeAttr(plot.port || "COM9")}"></div>`;
+  }
+  html += `<div class="setup-label">Tahap pertumbuhan</div><select class="growth-select">`;
+  GROWTH_STAGES_ID.forEach(([value, label]) => {
+    html += `<option value="${value}"${value === stage ? " selected" : ""}>${label}</option>`;
+  });
+  html += `</select><span class="save-cue" id="save-cue">Tersimpan</span></div></details>`;
+
+  html += `<div id="detail-dynamic"></div>`;
+  body.innerHTML = html;
+
+  const nameInput = body.querySelector(".d-name-input");
+  const nameSave = body.querySelector(".d-name-save");
+  nameInput.addEventListener("change", () => renamePlot(sensorId, nameInput.value));
+  nameInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      renamePlot(sensorId, nameInput.value);
+    }
+  });
+  nameSave.addEventListener("click", () => renamePlot(sensorId, nameInput.value));
+  const growthSelect = body.querySelector(".growth-select");
+  growthSelect.addEventListener("change", () => setPlotGrowthStage(sensorId, growthSelect.value));
+
+  refreshDetailDynamic(sensorId);
+}
+
+function refreshDetailDynamic(sensorId) {
+  if (sensorId !== selectedSensor) return;
+  const data = sensorData[sensorId];
+  const plot = plots[sensorId] || {};
+  if (!data) return;
+  const mode = plot.mode || data.mode || "simulate";
+  const detached = mode === "off";
+  const advice = data.advice || [];
+  const values = data.reading ? data.reading.values : null;
+  const severity = overallSeverity(advice);
+
+  const pill = document.getElementById("detail-pill");
+  if (pill) {
+    pill.className = "d-pill " + (detached ? "idle" : `severity-${severity}`);
+    pill.textContent = detached ? "Belum terpasang" : SEVERITY_LABEL[severity];
   }
 
+  const dyn = document.getElementById("detail-dynamic");
+  if (!dyn) return;
   if (detached) {
-    html +=
+    dyn.innerHTML =
       `<p class="detail-note-inline">Petak ini belum punya sensor. Pilih Langsung untuk ` +
       `memasang probe, atau Simulasi untuk demo.</p>`;
-    body.innerHTML = html;
     return;
   }
 
-  html += `<div class="detail-section-label">Bacaan tanah / Soil readings</div><div class="detail-reads">`;
+  let html = `<div class="detail-section-label">Bacaan tanah / Soil readings</div><div class="detail-reads">`;
   READING_META.forEach((metric) => {
     const value = values ? formatValue(values[metric.key]) : "--";
     const unit = metric.unit ? `<span class="read-unit">${metric.unit}</span>` : "";
@@ -283,7 +340,69 @@ function renderDetail(sensorId) {
     html += `</div>`;
   }
 
-  body.innerHTML = html;
+  dyn.innerHTML = html;
+}
+
+function showSaveCue() {
+  const cue = document.getElementById("save-cue");
+  if (!cue) return;
+  cue.classList.add("show");
+  window.clearTimeout(showSaveCue._timer);
+  showSaveCue._timer = window.setTimeout(() => cue.classList.remove("show"), 1600);
+}
+
+// Rename a plot and persist it, so the map label and the next launch both
+// show the new name. Uses the settings route, which does not rebuild the
+// reader, so renaming never interrupts a feed.
+async function renamePlot(sensorId, name) {
+  const trimmed = (name || "").trim();
+  if (!trimmed) return;
+  try {
+    const response = await fetch(`/api/sensors/${sensorId}/settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    if (!response.ok) return;
+  } catch (error) {
+    return;
+  }
+  if (plots[sensorId]) plots[sensorId].name = trimmed;
+  if (sensorData[sensorId]) sensorData[sensorId].name = trimmed;
+  // Reflect the new name on the map label immediately.
+  const label = document.querySelector(`#field-map .map-zone[data-sensor-id="${sensorId}"] .map-zone-label`);
+  if (label) label.textContent = trimmed;
+  flashNameSaved();
+}
+
+function flashNameSaved() {
+  const button = document.querySelector(".d-name-save");
+  if (!button) return;
+  button.textContent = "Tersimpan";
+  button.classList.add("saved");
+  window.clearTimeout(flashNameSaved._timer);
+  flashNameSaved._timer = window.setTimeout(() => {
+    button.textContent = "Simpan";
+    button.classList.remove("saved");
+  }, 1500);
+}
+
+// Set a plot's own growth stage and persist it. The advice re-evaluates with
+// the new stage on the next tick.
+async function setPlotGrowthStage(sensorId, stage) {
+  try {
+    const response = await fetch(`/api/sensors/${sensorId}/settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ growth_stage: stage }),
+    });
+    if (!response.ok) return;
+  } catch (error) {
+    return;
+  }
+  if (plots[sensorId]) plots[sensorId].growth_stage = stage;
+  if (sensorData[sensorId]) sensorData[sensorId].growth_stage = stage;
+  showSaveCue();
 }
 
 // Switch a plot between simulation, a live probe, and detached, straight
@@ -523,19 +642,12 @@ async function loadHistory(sensorId, panel) {
   }
 }
 
-function updateWatermark() {
-  document.getElementById("watermark").hidden = simulatedSensors.size === 0;
-}
-
-function applyUpdate(sensorId, reading, advice, simulated) {
+function applyUpdate(sensorId, reading, advice) {
   const panel = panels[sensorId];
   if (!panel) return;
   renderStatus(panel, advice);
   renderCards(panel, advice);
   renderDials(panel, reading ? reading.values : null);
-  if (simulated) simulatedSensors.add(sensorId);
-  else simulatedSensors.delete(sensorId);
-  updateWatermark();
 }
 
 const PROBE_READING_ANIMATION_MS = 1500;
@@ -607,6 +719,11 @@ function renderComparison(comparison) {
 const BANNER_DISCONNECTED = "Sambungan terputus. Mencoba menyambung ulang...";
 const BANNER_SENSOR_OFFLINE =
   "Sensor tidak merespons. Periksa sambungan probe, atau beralih ke Simulasi di konsol operator.";
+// How long a plot must stay silent before the offline banner appears. A live
+// probe can miss the odd read; only sustained silence is worth announcing, so
+// this is deliberately long to stop the banner flashing on brief blips.
+const SENSOR_OFFLINE_GRACE_MS = 45000;
+const failSince = {}; // sensor id -> timestamp its current silence streak began
 
 function showBanner(text) {
   const banner = document.getElementById("reconnect-banner");
@@ -648,16 +765,20 @@ function connectFeed(sensorId) {
     // handler. Show the sensor-offline cue and leave the last values in place
     // until a real reading returns.
     if (message.error === "sensor-not-responding") {
-      showBanner(BANNER_SENSOR_OFFLINE);
+      // Debounce: a single slow or missed read must not flash the banner. Only
+      // announce a plot offline once it has been silent for a good while; the
+      // next real reading resets it.
+      const failing = message.sensor_id;
+      if (failSince[failing] === undefined) failSince[failing] = Date.now();
+      if (Date.now() - failSince[failing] >= SENSOR_OFFLINE_GRACE_MS) {
+        showBanner(BANNER_SENSOR_OFFLINE);
+      }
       return;
     }
     // Any normal reading clears whichever banner was showing.
     hideBanner();
     const sid = message.sensor_id;
-    if (message.reading) {
-      if (message.simulated) simulatedSensors.add(sid);
-      else simulatedSensors.delete(sid);
-    }
+    delete failSince[sid];
     if (sensorData[sid]) {
       sensorData[sid].reading = message.reading;
       sensorData[sid].advice = message.advice;
@@ -669,9 +790,8 @@ function connectFeed(sensorId) {
       updateZoneStatus(sid, message.status);
       if (sid === selectedSensor) {
         if (message.probe_inserted) playProbeThenDetail(sid);
-        else renderDetail(sid);
+        else refreshDetailDynamic(sid);
       }
-      updateWatermark();
       return;
     }
     if (message.comparison) renderComparison(message.comparison);
@@ -721,7 +841,6 @@ async function start() {
         name: entry.name,
         status: entry.status,
       };
-      if (entry.reading && entry.reading.source !== "live") simulatedSensors.add(sensorId);
       if (entry.mode !== "off") connectFeed(sensorId);
     });
     updateFieldSummary();
@@ -736,7 +855,6 @@ async function start() {
       }
     });
     if (opening) selectPlot(opening);
-    updateWatermark();
     return;
   }
 
@@ -749,11 +867,9 @@ async function start() {
     renderStatus(panel, entry.advice);
     renderCards(panel, entry.advice);
     renderDials(panel, entry.reading ? entry.reading.values : null);
-    if (entry.reading && entry.reading.source !== "live") simulatedSensors.add(sensorId);
     loadHistory(sensorId, panel);
     connectFeed(sensorId);
   });
-  updateWatermark();
 }
 
 function openOperatorConsole() {

@@ -210,6 +210,47 @@ def test_rebind_without_any_zone_keeps_the_probe_in_air(tmp_path):
     assert reading.values["moisture"] == 0.0
 
 
+def test_sensor_settings_rename_persists_without_rebuilding_reader(tmp_path):
+    state = make_state(
+        sensors={"S1": {"mode": "simulate", "name": "Blok 1", "zone": [[0, 0], [10, 0], [5, 9]]}},
+        config_path=tmp_path / "config.json",
+    )
+    original_reader = state.readers["S1"]
+    client = TestClient(create_app(state))
+    response = client.post("/api/sensors/S1/settings", json={"name": "Sawah Utara"})
+    assert response.status_code == 200
+    assert state.config.sensors["S1"].name == "Sawah Utara"
+    assert state.readers["S1"] is original_reader  # renaming does not rebuild the reader
+    assert client.get("/api/state").json()["sensors"]["S1"]["name"] == "Sawah Utara"
+
+
+def test_per_plot_growth_stage_changes_only_that_plots_advice(tmp_path):
+    # Salinity advice is escalated during flowering, so a per-plot flowering
+    # stage must push that plot's status up without touching the others.
+    def stage_aware(reading, stage, *rest):
+        return [_Card("red" if stage == "flowering" else "amber")]
+
+    state = make_state(
+        sensors={"S1": {"mode": "simulate", "zone": [[0, 0], [1, 0], [1, 1]]}},
+        evaluate_fn=stage_aware,
+        config_path=tmp_path / "config.json",
+    )
+    db.insert_reading(state.con, Reading(NOW, "S1", {"moisture": 30.0}, source=Reading.SOURCE_SIM))
+    client = TestClient(create_app(state))
+    assert client.get("/api/state").json()["sensors"]["S1"]["status"] == "attention"
+
+    client.post("/api/sensors/S1/settings", json={"growth_stage": "flowering"})
+    plot = client.get("/api/state").json()["sensors"]["S1"]
+    assert plot["growth_stage"] == "flowering"
+    assert plot["status"] == "critical"
+
+
+def test_sensor_settings_rejects_an_unknown_growth_stage(tmp_path):
+    state = make_state(sensors={"S1": {"mode": "simulate"}}, config_path=tmp_path / "config.json")
+    client = TestClient(create_app(state))
+    assert client.post("/api/sensors/S1/settings", json={"growth_stage": "bogus"}).status_code == 422
+
+
 def test_zones_endpoint_reshape_keeps_existing_reader(tmp_path):
     state = make_state(
         sensors={"S1": {"mode": "simulate", "zone": [[0, 0], [1, 0], [1, 1]]}},

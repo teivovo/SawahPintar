@@ -120,6 +120,13 @@ class ZonesUpdateRequest(BaseModel):
     field_view: list | None = None
 
 
+class SensorSettingsRequest(BaseModel):
+    """A per-plot label and/or growth-stage change that needs no reader rebuild."""
+
+    name: str | None = None
+    growth_stage: str | None = None
+
+
 async def _default_sleep(seconds: float) -> None:
     await asyncio.sleep(seconds)
 
@@ -384,6 +391,27 @@ def create_app(state: WorkshopState) -> FastAPI:
         _insert_if_map_mode(reader, any(b.zone for b in state.config.sensors.values()))
         state.config.save(state.config_path)
         return {"sensor_id": sensor_id, "mode": payload.mode}
+
+    @app.post("/api/sensors/{sensor_id}/settings")
+    def update_sensor_settings(sensor_id: str, payload: SensorSettingsRequest):
+        """Rename a plot or restage it without rebuilding its reader, so the
+        change never interrupts a live feed or reseeds a simulation, and it
+        persists so the next launch shows the same setup."""
+        binding = state.config.sensors.get(sensor_id)
+        if binding is None:
+            raise HTTPException(status_code=404, detail=f"unknown sensor: {sensor_id}")
+        if payload.name is not None:
+            binding.name = payload.name
+        if payload.growth_stage is not None:
+            if payload.growth_stage not in GROWTH_STAGES:
+                raise HTTPException(status_code=422, detail="unknown growth stage")
+            binding.growth_stage = payload.growth_stage
+        state.config.save(state.config_path)
+        return {
+            "sensor_id": sensor_id,
+            "name": binding.name,
+            "growth_stage": binding.growth_stage or state.config.growth_stage,
+        }
 
     @app.post("/api/zones")
     def update_zones(payload: ZonesUpdateRequest):

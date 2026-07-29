@@ -40,6 +40,11 @@ class SensorBinding:
     mode: str = "simulate"
     name: str = ""
     zone: list | None = None
+    # Per-plot growth stage. None falls back to the workshop-wide
+    # ``WorkshopConfig.growth_stage``; set it to give one plot its own stage
+    # (a plot at flowering next to one still tillering), which changes the
+    # salinity and water advice for that plot only.
+    growth_stage: str | None = None
 
 
 @dataclass

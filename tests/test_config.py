@@ -65,9 +65,15 @@ def test_save_and_load_round_trip(tmp_path):
 
 
 def test_shipped_config_template_loads():
+    # The shipped config.json is the field-map demo layout (it opens straight
+    # onto the map). Validate that it loads cleanly: a valid growth stage and
+    # at least one sensor with a well-formed binding.
     config = WorkshopConfig.load("config.json")
     assert config.growth_stage in GROWTH_STAGES
-    assert "probe-a" in config.sensors
+    assert config.sensors
+    for binding in config.sensors.values():
+        assert binding.mode in ("simulate", "live", "off")
+        assert binding.zone is None or (isinstance(binding.zone, list) and len(binding.zone) >= 3)
 
 
 def test_field_card_defaults_are_blank():

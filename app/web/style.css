@@ -50,22 +50,6 @@ body {
   gap: 16px;
 }
 
-.watermark {
-  position: fixed;
-  top: 24px;
-  right: -70px;
-  z-index: 9999;
-  pointer-events: none;
-  transform: rotate(35deg);
-  background: var(--colour-red);
-  color: var(--colour-paper);
-  font-weight: 700;
-  font-size: 28px;
-  letter-spacing: 6px;
-  padding: 8px 100px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-}
-
 .reconnect-banner {
   position: fixed;
   top: 0;
@@ -87,7 +71,7 @@ body {
 .operator-link {
   position: fixed;
   left: 14px;
-  bottom: 14px;
+  top: 14px;
   width: 46px;
   height: 46px;
   padding: 9px;
@@ -515,3 +499,91 @@ body {
 .d-card-h { font-weight: 700; font-size: 18px; }
 .d-card-b { font-size: 15px; margin-top: 3px; }
 .d-card-en { font-size: 13px; font-style: italic; color: var(--colour-muted); margin-top: 4px; }
+
+/* Editable plot name */
+.d-head-main { flex: 1; min-width: 0; }
+.d-pill { flex: none; }
+.d-name-row { display: flex; align-items: center; gap: 8px; }
+.d-name-input {
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--colour-ink);
+  padding: 2px 6px;
+  margin-left: -6px;
+  border-radius: 8px;
+}
+.d-name-input:hover { background: #f1f3f5; border-color: #e5e7eb; }
+.d-name-input:focus { outline: none; border-color: var(--colour-green); background: var(--colour-paper); }
+.d-name-save {
+  flex: none;
+  border: 1px solid var(--colour-green);
+  background: var(--colour-green);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 13px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.d-name-save:hover { filter: brightness(1.06); }
+.d-name-save.saved { background: var(--colour-green-bg); color: var(--colour-green); }
+
+/* Collapsible, low-key plot setup (data source + growth stage) */
+.plot-setup {
+  margin: 14px 0 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafbfc;
+}
+.plot-setup > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--colour-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plot-setup > summary::-webkit-details-marker { display: none; }
+.plot-setup > summary::before { content: "\25B8"; font-size: 12px; transition: transform 0.15s ease; }
+.plot-setup[open] > summary::before { transform: rotate(90deg); }
+.plot-setup > summary:hover { color: var(--colour-ink); }
+.setup-hint { font-weight: 500; opacity: 0.7; margin-left: auto; font-size: 12px; }
+.setup-body { padding: 2px 14px 14px; }
+.setup-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--colour-muted);
+  font-weight: 700;
+  margin: 12px 0 8px;
+}
+.growth-select {
+  width: 100%;
+  font: inherit;
+  font-size: 15px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 2px solid #d1d5db;
+  background: var(--colour-paper);
+  color: var(--colour-ink);
+}
+.save-cue {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--colour-green);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.save-cue.show { opacity: 1; }

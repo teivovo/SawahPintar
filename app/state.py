@@ -162,8 +162,13 @@ class WorkshopState:
         )
 
     def latest_advice(self, sensor_id: str, reading: Reading) -> list:
+        # A plot may carry its own growth stage; otherwise use the
+        # workshop-wide one. The stage changes salinity and water advice, so
+        # it must be the plot's own where set.
+        binding = self.config.sensors.get(sensor_id)
+        stage = binding.growth_stage if binding and binding.growth_stage else self.config.growth_stage
         return self.evaluate_fn(
-            reading, self.config.growth_stage, self.calibration, self.rules, self.content
+            reading, stage, self.calibration, self.rules, self.content
         )
 
 
@@ -202,6 +207,7 @@ def build_state_payload(state: WorkshopState) -> dict:
             "mode": binding.mode,
             "port": binding.port,
             "profile": binding.profile,
+            "growth_stage": binding.growth_stage or state.config.growth_stage,
             "status": zone_status(reading, advice, binding.mode),
         }
         if reading is not None:

@@ -55,6 +55,28 @@ def test_simulator_is_deterministic_for_a_given_seed():
     assert first.read_once(NOW).values == second.read_once(NOW).values
 
 
+def test_soil_scenarios_differ_between_plots():
+    # Each plot gets its own soil condition, so the map is not one flat colour.
+    first = SimulatedReader("S1")
+    first.insert_probe()
+    second = SimulatedReader("S2")
+    second.insert_probe()
+    a = first.read_once(NOW).values
+    b = second.read_once(NOW).values
+    assert (a["ph"], a["conductivity"]) != (b["ph"], b["conductivity"])
+
+
+def test_soil_scenarios_span_saline_and_non_saline():
+    conductivities = []
+    for index in range(1, 7):
+        reader = SimulatedReader(f"S{index}")
+        reader.insert_probe()
+        conductivities.append(reader.read_once(NOW).values["conductivity"])
+    # At least one plot severely saline (red) and one non-saline (green).
+    assert max(conductivities) > 4000
+    assert min(conductivities) < 1000
+
+
 def test_in_air_moisture_and_conductivity_are_read_from_the_air_dict(monkeypatch):
     """The in-air branch must read AIR (via base), not hardcode 0.0, so a
     faculty edit to AIR's moisture or conductivity entries actually takes

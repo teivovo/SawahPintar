@@ -1,13 +1,255 @@
 {
-  "language": "en",
-  "site_name": "",
-  "growth_stage": "transplanting",
+  "language": "id",
+  "site_name": "Sidrap (demo)",
+  "growth_stage": "tillering",
   "transplanting_date": null,
+  "field_image": "assets/field-default.jpg",
+  "field_view": [
+    1537,
+    1023
+  ],
   "sensors": {
-    "probe-a": {
+    "S1": {
       "port": "COM9",
-      "profile": "data\\profiles\\sn3002.json",
-      "mode": "live"
+      "profile": "data/profiles/sn3002.json",
+      "mode": "simulate",
+      "name": "Blok 1",
+      "zone": [
+        [
+          1086,
+          122
+        ],
+        [
+          1150,
+          130
+        ],
+        [
+          1215,
+          140
+        ],
+        [
+          1286,
+          404
+        ],
+        [
+          1135,
+          368
+        ],
+        [
+          966,
+          315
+        ],
+        [
+          930,
+          248
+        ],
+        [
+          944,
+          170
+        ],
+        [
+          1006,
+          130
+        ]
+      ],
+      "growth_stage": null
+    },
+    "S2": {
+      "port": "COM9",
+      "profile": "data/profiles/sn3002.json",
+      "mode": "simulate",
+      "name": "Blok 2",
+      "zone": [
+        [
+          381,
+          279
+        ],
+        [
+          492,
+          254
+        ],
+        [
+          603,
+          232
+        ],
+        [
+          604,
+          425
+        ],
+        [
+          653,
+          576
+        ],
+        [
+          432,
+          474
+        ],
+        [
+          397,
+          383
+        ]
+      ],
+      "growth_stage": null
+    },
+    "S3": {
+      "port": "COM9",
+      "profile": "data/profiles/sn3002.json",
+      "mode": "simulate",
+      "name": "Blok 3",
+      "zone": [
+        [
+          665,
+          263
+        ],
+        [
+          897,
+          265
+        ],
+        [
+          904,
+          343
+        ],
+        [
+          975,
+          385
+        ],
+        [
+          984,
+          526
+        ],
+        [
+          671,
+          526
+        ],
+        [
+          631,
+          403
+        ]
+      ],
+      "growth_stage": null
+    },
+    "S4": {
+      "port": "COM9",
+      "profile": "data/profiles/sn3002.json",
+      "mode": "off",
+      "name": "Blok 4",
+      "zone": [
+        [
+          1030,
+          397
+        ],
+        [
+          1337,
+          486
+        ],
+        [
+          1271,
+          594
+        ],
+        [
+          1228,
+          710
+        ],
+        [
+          1031,
+          701
+        ],
+        [
+          1046,
+          548
+        ]
+      ],
+      "growth_stage": null
+    },
+    "S5": {
+      "port": "COM9",
+      "profile": "data/profiles/sn3002.json",
+      "mode": "simulate",
+      "name": "Blok 5",
+      "zone": [
+        [
+          687,
+          543
+        ],
+        [
+          979,
+          543
+        ],
+        [
+          968,
+          708
+        ],
+        [
+          868,
+          779
+        ],
+        [
+          762,
+          766
+        ],
+        [
+          651,
+          701
+        ]
+      ],
+      "growth_stage": null
+    },
+    "S6": {
+      "port": "COM9",
+      "profile": "data/profiles/sn3002.json",
+      "mode": "simulate",
+      "name": "Blok 6",
+      "zone": [
+        [
+          346,
+          576
+        ],
+        [
+          417,
+          499
+        ],
+        [
+          532,
+          561
+        ],
+        [
+          639,
+          616
+        ],
+        [
+          570,
+          732
+        ],
+        [
+          486,
+          897
+        ],
+        [
+          410,
+          1010
+        ],
+        [
+          210,
+          1021
+        ],
+        [
+          117,
+          975
+        ],
+        [
+          210,
+          860
+        ],
+        [
+          268,
+          744
+        ],
+        [
+          308,
+          639
+        ]
+      ],
+      "growth_stage": null
     }
   }
 }

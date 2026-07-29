@@ -5,6 +5,7 @@ Never present simulated data as measured.
 """
 
 import random
+import re
 from datetime import datetime
 
 from app.storage.models import Reading
@@ -32,6 +33,32 @@ SOIL = {
     "potassium_raw": 85.0,
 }
 
+# Per-sensor soil conditions, so a demo field shows a spread of green / amber
+# / red rather than one uniform colour. Each scenario sets only the three
+# status drivers - moisture, pH and conductivity; temperature and N/P/K keep
+# the SOIL bases. Every scenario stays in the range the simulator tests pin
+# (moisture > 20, conductivity > 100 in soil), so a red plot comes from
+# salinity, never from a dry probe. A reader picks one deterministically from
+# its sensor id (round-robin by trailing number, else hashed), so plots
+# numbered in sequence get different conditions.
+SOIL_SCENARIOS = [
+    {"moisture": 44.0, "ph": 6.4, "conductivity": 700.0},    # good -> green
+    {"moisture": 40.0, "ph": 5.0, "conductivity": 760.0},    # acidic -> amber
+    {"moisture": 37.0, "ph": 6.1, "conductivity": 4500.0},   # severely saline -> red
+    {"moisture": 43.0, "ph": 6.6, "conductivity": 660.0},    # good -> green
+    {"moisture": 36.0, "ph": 6.0, "conductivity": 4200.0},   # severely saline -> red
+    {"moisture": 39.0, "ph": 6.2, "conductivity": 1700.0},   # slightly saline -> amber
+]
+
+
+def _scenario_for(sensor_id: str) -> dict:
+    match = re.search(r"(\d+)$", sensor_id)
+    if match:
+        index = int(match.group(1)) % len(SOIL_SCENARIOS)
+    else:
+        index = random.Random(f"scenario:{sensor_id}").randrange(len(SOIL_SCENARIOS))
+    return SOIL_SCENARIOS[index]
+
 
 class SimulatedReader:
     """Mimics the SensorReader interface without any hardware."""
@@ -51,6 +78,8 @@ class SimulatedReader:
             "phosphorus_raw": npk_rng.uniform(-9.0, 14.0),
             "potassium_raw": npk_rng.uniform(-45.0, 55.0),
         }
+        # This plot's soil condition, fixed for the life of the reader.
+        self._soil = _scenario_for(sensor_id)
 
     def insert_probe(self) -> None:
         self._in_soil = True
@@ -62,15 +91,16 @@ class SimulatedReader:
         base = SOIL if self._in_soil else AIR
 
         if self._in_soil:
+            soil = self._soil
             values = {
-                "moisture": round(base["moisture"] + self._rng.uniform(-1.2, 1.2), 1),
+                "moisture": round(soil["moisture"] + self._rng.uniform(-1.2, 1.2), 1),
                 "temperature": round(
-                    base["temperature"] + self._rng.uniform(-0.3, 0.3), 1
+                    SOIL["temperature"] + self._rng.uniform(-0.3, 0.3), 1
                 ),
                 "conductivity": round(
-                    base["conductivity"] + self._rng.uniform(-30.0, 30.0), 0
+                    soil["conductivity"] + self._rng.uniform(-30.0, 30.0), 0
                 ),
-                "ph": round(base["ph"] + self._rng.uniform(-0.08, 0.08), 2),
+                "ph": round(soil["ph"] + self._rng.uniform(-0.08, 0.08), 2),
                 # N/P/K estimate: per-sensor offset plus small jitter, drawn
                 # after the four core metrics so their sequence is unchanged.
                 "nitrogen_raw": round(
