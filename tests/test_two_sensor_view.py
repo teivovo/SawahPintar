@@ -106,10 +106,17 @@ def test_comparison_strip_present_in_markup():
 
 
 def test_comparison_never_labels_a_nutrient_register():
+    """The two-sensor comparison strip compares only the four soil metrics,
+    never a nutrient register. The per-plot detail does show an NPK estimate,
+    by explicit request and labelled "estimasi sensor"; the comparison does
+    not, so the check targets the comparison label map and renderer rather
+    than the whole file."""
     content = (WEB_DIR / "app.js").read_text(encoding="utf-8")
-    assert "nitrogen" not in content.lower()
-    assert "phosphorus" not in content.lower()
-    assert "potassium" not in content.lower()
+    label_map = content.split("METRIC_LABEL_ID", 1)[1].split("};", 1)[0]
+    renderer = content.split("function renderComparison", 1)[1].split("\nfunction ", 1)[0]
+    for register in ("nitrogen", "phosphorus", "potassium"):
+        assert register not in label_map.lower()
+        assert register not in renderer.lower()
 
 
 def test_comparison_strip_has_a_dark_mode_override():

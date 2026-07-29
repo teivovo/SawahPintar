@@ -84,7 +84,7 @@ def test_broadcast_loop_persists_and_sends_each_reading():
     )
 
     assert len(websocket.sent) == 3
-    assert db.count_rows(state.con) == 3 * 4
+    assert db.count_rows(state.con) == 3 * 7  # seven metrics each, incl. N/P/K
     assert slept == [2.0, 2.0, 2.0]
     state.con.close()
 

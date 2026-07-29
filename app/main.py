@@ -200,6 +200,16 @@ def main(argv: list[str] | None = None) -> int:
         content=content,
         permentan=permentan,
     )
+
+    # In a field-map demo (plots have been drawn) every simulated plot is a
+    # probe already in the ground, so the map shows live soil values and the
+    # NPK estimate the moment it opens. The single-probe demo, with no zones,
+    # keeps its probe in air for the hands-on insertion moment.
+    if any(binding.zone for binding in config.sensors.values()):
+        for reader in state.readers.values():
+            if hasattr(reader, "insert_probe"):
+                reader.insert_probe()
+
     app = create_app(state)
 
     uvicorn.run(app, host=HOST, port=parse_port(argv))

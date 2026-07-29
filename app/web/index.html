@@ -17,14 +17,18 @@
   </button>
 
   <main id="main">
-    <!-- The field map is shown only once plots have been drawn in the zone
-         editor. With no zones (a single bare probe) it stays hidden and the
-         panels below render directly, the original single-plot view. -->
-    <div id="field-map" class="field-map" hidden aria-label="Peta lahan"></div>
-    <div id="field-summary" class="field-summary" hidden></div>
+    <!-- Map mode (plots drawn) lays the field on the left and the selected
+         plot's detail on the right, sized to fit one screen without
+         scrolling. With no zones (a single bare probe) the map stays hidden
+         and the panels render directly, the original single-plot view. -->
+    <div class="map-col">
+      <div id="field-map" class="field-map" hidden aria-label="Peta lahan"></div>
+      <div id="field-summary" class="field-summary" hidden></div>
+    </div>
     <div id="detail" class="detail">
       <div id="detail-title" class="detail-title" hidden></div>
       <p id="detail-note" class="detail-note" hidden></p>
+      <div id="detail-body"></div>
       <div id="panels" class="panels"></div>
       <div id="comparison-strip" class="comparison-strip" hidden></div>
     </div>

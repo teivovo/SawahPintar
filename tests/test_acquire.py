@@ -48,7 +48,7 @@ def test_poll_forever_persists_readings(con):
 
     poll_forever(reader, con, 2.0, StubClock(NOW), stop_after=3, sleeper=slept.append)
 
-    assert db.count_rows(con) == 12  # three readings, four metrics each
+    assert db.count_rows(con) == 21  # three readings, seven metrics each (incl. N/P/K)
     assert len(db.series(con, "sim-a", "moisture")) == 3
 
 

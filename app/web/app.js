@@ -38,7 +38,46 @@ const MAP_LEGEND = [
 ];
 
 const plots = {}; // sensorId -> { name, zone, mode, status }
+const sensorData = {}; // sensorId -> { reading, advice, mode, name, status } (map mode)
 let selectedSensor = null;
+
+// The four soil readings shown on the detail, and the NPK estimate. The
+// N/P/K bands are coarse and the block is labelled an estimate: the probe's
+// nitrogen/phosphorus/potassium are derived from one bulk conductivity
+// reading, so this is a talking point, not a fertiliser dose. The dose
+// comes from a PUTS test in the operator console, never from here.
+const READING_META = [
+  { key: "moisture", label: "Kelembapan", unit: "%" },
+  { key: "ph", label: "pH tanah", unit: "" },
+  { key: "conductivity", label: "Kekuatan larutan", unit: "uS/cm" },
+  { key: "temperature", label: "Suhu tanah", unit: "C" },
+];
+const NPK_META = [
+  { key: "nitrogen_raw", symbol: "N", label: "Nitrogen", low: 80, high: 200, actLow: "pertimbangkan urea" },
+  { key: "phosphorus_raw", symbol: "P", label: "Fosfor", low: 12, high: 25, actLow: "pertimbangkan SP-36" },
+  { key: "potassium_raw", symbol: "K", label: "Kalium", low: 50, high: 100, actLow: "pertimbangkan KCl" },
+];
+const BAND_ID_LABEL = { low: "Rendah", mid: "Sedang", ok: "Cukup" };
+
+function svgWrap(inner) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${inner}</svg>`;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"]/g, (character) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character])
+  );
+}
+
+function npkBand(value, meta) {
+  if (value < meta.low) return "low";
+  if (value < meta.high) return "mid";
+  return "ok";
+}
+
+function isMapMode() {
+  return document.getElementById("main").classList.contains("map-mode");
+}
 
 function svgEl(tag, attrs) {
   const element = document.createElementNS(SVGNS, tag);
@@ -144,26 +183,151 @@ function selectPlot(sensorId) {
   document.querySelectorAll("#field-map .map-zone").forEach((group) => {
     group.classList.toggle("selected", group.dataset.sensorId === sensorId);
   });
-  const plot = plots[sensorId];
-  const detached = plot && plot.mode === "off";
-  // A detached plot has no readings to show; hide the panel and explain
-  // rather than showing empty dials with no context.
-  Object.entries(panels).forEach(([id, panel]) => {
-    panel.node.hidden = id !== sensorId || detached;
-  });
-  const note = document.getElementById("detail-note");
-  if (note) {
-    note.hidden = !detached;
-    note.textContent = detached
-      ? "Petak ini belum punya sensor. Pasang probe (mode Langsung) atau jalankan Simulasi di konsol operator."
-      : "";
-  }
+  // The whole detail, including its heading, lives in the body now, so the
+  // separate title element is not used in map mode.
   const title = document.getElementById("detail-title");
-  if (title && plot) {
-    title.hidden = false;
-    const mode = MODE_ID_LABEL[plot.mode] || plot.mode;
-    title.textContent = mode ? `${plot.name} - ${mode}` : plot.name;
+  if (title) title.hidden = true;
+  const note = document.getElementById("detail-note");
+  if (note) note.hidden = true;
+  renderDetail(sensorId);
+}
+
+// Full per-plot detail for the map's side column, sized to fit one screen:
+// heading + status, the data-source switch (simulation / live / detached),
+// the four soil readings, an NPK estimate, and the advice cards.
+function renderDetail(sensorId) {
+  const body = document.getElementById("detail-body");
+  const data = sensorData[sensorId];
+  const plot = plots[sensorId] || {};
+  if (!body || !data) return;
+  const advice = data.advice || [];
+  const values = data.reading ? data.reading.values : null;
+  const mode = plot.mode || data.mode || "simulate";
+  const detached = mode === "off";
+  const severity = overallSeverity(advice);
+  const pillClass = detached ? "idle" : `severity-${severity}`;
+  const pillLabel = detached ? "Belum terpasang" : SEVERITY_LABEL[severity];
+
+  let html =
+    `<div class="d-head"><div><div class="d-name">${escapeHtml(plot.name || sensorId)}</div>` +
+    `<div class="d-sub">Sensor ${escapeHtml(sensorId)}</div></div>` +
+    `<span class="d-pill ${pillClass}">${pillLabel}</span></div>`;
+
+  // Data source switch: simulation / live probe / detached.
+  html += `<div class="detail-section-label">Sumber data / Data source</div><div class="mode-buttons">`;
+  [
+    ["simulate", "Simulasi", "demo"],
+    ["live", "Langsung", "probe asli"],
+    ["off", "Lepas", "tanpa sensor"],
+  ].forEach(([value, label, hint]) => {
+    html +=
+      `<button type="button" class="mode-btn mode-${value}${mode === value ? " active" : ""}" ` +
+      `onclick="setPlotMode('${sensorId}','${value}')">${label}<small>${hint}</small></button>`;
+  });
+  html += `</div>`;
+  if (mode === "live") {
+    html +=
+      `<div class="port-row"><span>Port</span>` +
+      `<input type="text" id="detail-port" value="${escapeHtml(plot.port || "COM9")}"></div>`;
   }
+
+  if (detached) {
+    html +=
+      `<p class="detail-note-inline">Petak ini belum punya sensor. Pilih Langsung untuk ` +
+      `memasang probe, atau Simulasi untuk demo.</p>`;
+    body.innerHTML = html;
+    return;
+  }
+
+  html += `<div class="detail-section-label">Bacaan tanah / Soil readings</div><div class="detail-reads">`;
+  READING_META.forEach((metric) => {
+    const value = values ? formatValue(values[metric.key]) : "--";
+    const unit = metric.unit ? `<span class="read-unit">${metric.unit}</span>` : "";
+    html +=
+      `<div class="read"><div class="read-label">${metric.label}</div>` +
+      `<div class="read-value">${value}${unit}</div></div>`;
+  });
+  html += `</div>`;
+
+  const hasNpk = values && NPK_META.some((m) => values[m.key] !== undefined && values[m.key] !== null);
+  if (hasNpk) {
+    html +=
+      `<div class="detail-section-label">Perkiraan NPK ` +
+      `<span class="npk-caveat">estimasi sensor</span></div><div class="npk-block">`;
+    NPK_META.forEach((meta) => {
+      const raw = values[meta.key];
+      if (raw === undefined || raw === null) return;
+      const band = npkBand(raw, meta);
+      const action = band === "ok" ? "cukup" : band === "mid" ? "pantau" : meta.actLow;
+      html +=
+        `<div class="npk-row"><span class="npk-el npk-${meta.symbol.toLowerCase()}">${meta.symbol}</span>` +
+        `<span class="npk-name">${meta.label}<small>${action}</small></span>` +
+        `<span class="npk-val"><span class="npk-num">${Math.round(raw)}<small>mg/kg</small></span>` +
+        `<span class="band-tag band-${band}">${BAND_ID_LABEL[band]}</span></span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (advice.length) {
+    html += `<div class="detail-section-label">Saran / Advice</div><div class="detail-cards">`;
+    const enHidden = document.body.dataset.language !== "en";
+    [...advice]
+      .sort(compareAdvice)
+      .slice(0, 4)
+      .forEach((card) => {
+        html +=
+          `<div class="d-card severity-${card.severity}"><div class="d-card-h">${escapeHtml(card.headline)}</div>` +
+          `<div class="d-card-b">${escapeHtml(card.body)}</div>` +
+          `<div class="d-card-en"${enHidden ? " hidden" : ""}>${escapeHtml(card.subtitle_en)}</div></div>`;
+      });
+    html += `</div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+// Switch a plot between simulation, a live probe, and detached, straight
+// from its detail. Simulation and live swap without touching the socket:
+// the broadcast loop re-reads the plot's reader each tick, so the next tick
+// uses the new one. Detaching closes the socket; re-attaching reopens it.
+async function setPlotMode(sensorId, mode) {
+  const plot = plots[sensorId];
+  if (!plot || plot.mode === mode) return;
+  const wasOff = plot.mode === "off";
+  const portInput = document.getElementById("detail-port");
+  const port = (portInput && portInput.value) || plot.port || "COM9";
+  try {
+    const response = await fetch(`/api/sensors/${sensorId}/bind`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, port, name: plot.name, zone: plot.zone }),
+    });
+    if (!response.ok) return;
+  } catch (error) {
+    return;
+  }
+  plot.mode = mode;
+  plot.port = port;
+  sensorData[sensorId].mode = mode;
+  if (mode === "off") {
+    if (sockets[sensorId]) sockets[sensorId].close();
+    sensorData[sensorId].reading = null;
+    sensorData[sensorId].advice = [];
+    sensorData[sensorId].status = "idle";
+    updateZoneStatus(sensorId, "idle");
+  } else if (wasOff) {
+    connectFeed(sensorId);
+  }
+  updateFieldSummary();
+  if (sensorId === selectedSensor) renderDetail(sensorId);
+}
+
+function playProbeThenDetail(sensorId) {
+  showProbeOverlay();
+  window.setTimeout(() => {
+    hideProbeOverlay();
+    renderDetail(sensorId);
+  }, PROBE_READING_ANIMATION_MS);
 }
 
 function updateZoneStatus(sensorId, status) {
@@ -466,9 +630,12 @@ function hideReconnectBanner() {
   hideBanner();
 }
 
+const sockets = {};
+
 function connectFeed(sensorId) {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   const socket = new WebSocket(`${protocol}://${window.location.host}/ws?sensor_id=${sensorId}`);
+  sockets[sensorId] = socket;
   socket.addEventListener("open", hideReconnectBanner);
   socket.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
@@ -486,18 +653,37 @@ function connectFeed(sensorId) {
     }
     // Any normal reading clears whichever banner was showing.
     hideBanner();
+    const sid = message.sensor_id;
+    if (message.reading) {
+      if (message.simulated) simulatedSensors.add(sid);
+      else simulatedSensors.delete(sid);
+    }
+    if (sensorData[sid]) {
+      sensorData[sid].reading = message.reading;
+      sensorData[sid].advice = message.advice;
+      sensorData[sid].status = message.status;
+    }
+    if (isMapMode()) {
+      // Recolour this plot on the map from the status on the tick, and
+      // refresh the detail if this is the plot currently open.
+      updateZoneStatus(sid, message.status);
+      if (sid === selectedSensor) {
+        if (message.probe_inserted) playProbeThenDetail(sid);
+        else renderDetail(sid);
+      }
+      updateWatermark();
+      return;
+    }
     if (message.comparison) renderComparison(message.comparison);
     if (message.probe_inserted) {
       playProbeInsertionSequence(message);
     } else {
       applyUpdate(message.sensor_id, message.reading, message.advice, message.simulated);
     }
-    // Recolour this plot on the field map from the plot status carried on
-    // the tick, so a plot that crosses into attention or act-now changes
-    // colour live without the facilitator needing to open it.
-    updateZoneStatus(message.sensor_id, message.status);
   });
   socket.addEventListener("close", () => {
+    // Do not reconnect a plot the operator has detached on purpose.
+    if (plots[sensorId] && plots[sensorId].mode === "off") return;
     // The dials and cards keep showing the last values they had, with no
     // visual cue that the feed is dead, which is stale data presented as
     // current for as long as the probe or the dongle stays disconnected.
@@ -512,35 +698,28 @@ async function start() {
   document.body.dataset.language = state.language;
 
   const sensorIds = Object.keys(state.sensors);
-  const useMap = zonesConfigured(state);
 
-  if (useMap) {
+  if (zonesConfigured(state)) {
+    // Map mode: field on the left, one plot's detail on the right, one
+    // screen. Plots stream but render into the shared detail, not a panel
+    // each, so nothing stacks off the bottom of the screen.
+    document.getElementById("main").classList.add("map-mode");
     buildFieldMap(state);
     document.getElementById("field-summary").hidden = false;
-  } else {
-    // No zones drawn: the original single/split panel view.
-    document.getElementById("panels").classList.toggle("split", sensorIds.length === 2);
-    renderComparison(state.comparison);
-  }
-
-  sensorIds.forEach((sensorId) => {
-    const panel = createPanel(sensorId);
-    const entry = state.sensors[sensorId];
-    renderStatus(panel, entry.advice);
-    renderCards(panel, entry.advice);
-    renderDials(panel, entry.reading ? entry.reading.values : null);
-    if (entry.reading && entry.reading.source !== "live") simulatedSensors.add(sensorId);
-    loadHistory(sensorId, panel);
-    // A detached plot (mode 'off') has no feed to open; every other plot
-    // streams. On the map, panels start hidden until their plot is tapped.
-    if (entry.mode !== "off") connectFeed(sensorId);
-    if (useMap) panel.node.hidden = true;
-  });
-
-  if (useMap) {
+    sensorIds.forEach((sensorId) => {
+      const entry = state.sensors[sensorId];
+      sensorData[sensorId] = {
+        reading: entry.reading,
+        advice: entry.advice,
+        mode: entry.mode,
+        name: entry.name,
+        status: entry.status,
+      };
+      if (entry.reading && entry.reading.source !== "live") simulatedSensors.add(sensorId);
+      if (entry.mode !== "off") connectFeed(sensorId);
+    });
     updateFieldSummary();
-    // Open on the plot that most needs attention, so the display lands on
-    // the interesting one rather than an arbitrary first plot.
+    // Open on the plot that most needs attention.
     let opening = sensorIds[0];
     let bestRank = -1;
     sensorIds.forEach((sensorId) => {
@@ -551,8 +730,23 @@ async function start() {
       }
     });
     if (opening) selectPlot(opening);
+    updateWatermark();
+    return;
   }
 
+  // No zones drawn: the original single/split panel view.
+  document.getElementById("panels").classList.toggle("split", sensorIds.length === 2);
+  renderComparison(state.comparison);
+  sensorIds.forEach((sensorId) => {
+    const panel = createPanel(sensorId);
+    const entry = state.sensors[sensorId];
+    renderStatus(panel, entry.advice);
+    renderCards(panel, entry.advice);
+    renderDials(panel, entry.reading ? entry.reading.values : null);
+    if (entry.reading && entry.reading.source !== "live") simulatedSensors.add(sensorId);
+    loadHistory(sensorId, panel);
+    connectFeed(sensorId);
+  });
   updateWatermark();
 }
 
